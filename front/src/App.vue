@@ -7,6 +7,7 @@
       </v-btn>
       <v-toolbar-title style="color: #3F51B5">ThrowBox</v-toolbar-title>
       <v-text-field
+        v-model="searchFile"
         style="max-width: 600px; margin-left: 95px"
         prepend-inner-icon="mdi-magnify"
         hide-details
@@ -80,6 +81,7 @@ export default {
         { text: 'Favorite', icon: 'mdi-heart', to: { path: '/favorite' } },
         { text: 'Recycle Bin', icon: 'mdi-delete', to: { path: '/bin' } },
       ],
+      searchFile: '',
     };
   },
   methods: {
