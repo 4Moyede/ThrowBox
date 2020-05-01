@@ -22,10 +22,10 @@
       <v-btn v-if="$vuetify.breakpoint.xs" icon color="#3F51B5">
         <v-icon>mdi-magnify</v-icon>
       </v-btn>
-      <v-btn icon color="#3F51B5">
+      <v-btn @click="logOut()" icon color="#3F51B5">
         <v-icon>mdi-account-arrow-right</v-icon>
       </v-btn>
-      <div v-if="!$vuetify.breakpoint.xs" style="color: #3F51B5; font-size: 18px">Log Out</div>
+      <div @click="logOut()" v-if="!$vuetify.breakpoint.xs" style="color: #3F51B5; font-size: 18px">Log Out</div>
     </v-app-bar>
     <v-navigation-drawer
       v-model="drawer"
@@ -33,7 +33,7 @@
       absolute
     >
       <v-list style="margin-top: 60px">
-        <v-list-item-group color="primary">
+        <v-list-item-group color="secondary" v-model="navIndex">
           <v-list-item
             v-for="(item, i) in navMenu"
             :key="i"
@@ -53,7 +53,7 @@
         <div class="mt-n6 mr-4" style="margin-left: 71px">
           <div class="mb-2">Capacity</div>
           <v-progress-linear
-            color="light-blue"
+            color="info"
             height="10"
             value="40"
             striped
@@ -75,10 +75,11 @@ export default {
   data() {
     return {
       drawer: true,
+      navIndex: 0,
       navMenu: [
         { text: 'Storage', icon: 'mdi-database', to: { path: '/' } },
         { text: 'Recent', icon: 'mdi-history', to: { path: '/recent' } },
-        { text: 'Favorite', icon: 'mdi-heart', to: { path: '/favorite' } },
+        { text: 'Favorite', icon: 'mdi-star', to: { path: '/favorite' } },
         { text: 'Recycle Bin', icon: 'mdi-delete', to: { path: '/bin' } },
       ],
       searchFile: '',
@@ -91,6 +92,9 @@ export default {
       } else {
         this.drawer = true;
       }
+    },
+    logOut() {
+
     },
   },
 };

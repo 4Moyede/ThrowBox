@@ -7,11 +7,11 @@ export default new Vuetify({
   theme: {
     themes: {
       light: {
-        primary: '#03A9F4',
+        primary: '#2196F3',
         secondary: '#3F51B5',
         accent: '#00BCD4',
         error: '#F44336',
-        info: '#2196F3',
+        info: '#03A9F4',
         success: '#8BC34A',
         warning: '#FF5722',
         grey3: '#eceeef',
@@ -20,11 +20,11 @@ export default new Vuetify({
         grey8: '#343a40',
       },
       dark: {
-        primary: '#03A9F4',
+        primary: '#2196F3',
         secondary: '#3F51B5',
         accent: '#00BCD4',
         error: '#F44336',
-        info: '#2196F3',
+        info: '#03A9F4',
         success: '#8BC34A',
         warning: '#FF5722',
         grey3: '#eceeef',
