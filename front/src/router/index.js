@@ -33,6 +33,21 @@ const routes = [
     name: 'Home',
     component: () => import('../views/Home.vue'),
   },
+  {
+    path: '/favorite',
+    name: 'Favorite',
+    component: () => import('../views/Favorite.vue'),
+  },
+  {
+    path: '/recent',
+    name: 'Recent',
+    component: () => import('../views/Recent.vue'),
+  },
+  {
+    path: '/bin',
+    name: 'RecycleBin',
+    component: () => import('../views/RecycleBin.vue'),
+  },
 ];
 
 const router = new VueRouter({

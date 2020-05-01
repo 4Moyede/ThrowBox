@@ -37,6 +37,7 @@
           <v-list-item
             v-for="(item, i) in navMenu"
             :key="i"
+            :to="item.to"
           >
             <v-list-item-icon>
               <v-icon v-text="item.icon"></v-icon>
