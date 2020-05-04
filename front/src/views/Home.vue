@@ -328,7 +328,9 @@ export default {
   white-space: nowrap;
 }
 .createdDateStyle {
+  white-space: nowrap;
 }
 .fileSizeStyle {
+  white-space: nowrap;
 }
 </style>
