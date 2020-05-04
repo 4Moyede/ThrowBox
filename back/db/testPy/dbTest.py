@@ -26,37 +26,38 @@ def tableScan(tableName):
     for i in response['Items']:
      print(json.dumps(i, cls=DecimalEncoder))
 
-def insertToFile(isFile,name,path,createdDate,auth,s3Link):
-    
+def insertToFile(isFile,name,path,createdDate,auth):
+
   # Helper class to convert a DynamoDB item to JSON.
-  
-  class DecimalEncoder(json.JSONEncoder):
-      def default(self, o):
-          if isinstance(o, decimal.Decimal):
-              if abs(o) % 1 > 0:
+    class DecimalEncoder(json.JSONEncoder):
+        def default(self, o):
+            if isinstance(o, decimal.Decimal):
+                if abs(o) % 1 > 0:
                   return float(o)
-              else:
+                else:
                   return int(o)
-          return super(DecimalEncoder, self).default(o)
+            return super(DecimalEncoder, self).default(o)
 
-
-  #dynamodb = boto3.resource('dynamodb', region_name='fakeRegion', endpoint_url="http://localhost:8080") 
-  table = dynamodb.Table('File')
-
-  response = table.put_item(
+    table = dynamodb.Table('File')
+    """
+    s3Link를 생성하는 또는 받아오는 부분입니다.
+    """
+    s3Link="tempLink"
+    response = table.put_item(
     Item={
-          'id': str(name)+str(createdDate),
-          'name': name,
-          'info': {
-              'isFile':isFile,
-              'path':path,
+        'id': str(name)+str(createdDate),
+        'name': name,
+        'info': {
+            'isFile':isFile,
+            'path':path,
               'createdDate':str(createdDate),
               'deletedDate':None,
               'auth':auth,
               's3Link':s3Link
-          }
-      }
-  )
+            }
+        }    
+    ) 
+    return response
   #response의 헤더를 확인 하면 http response 값이 있습니다. 해당 값을 가져와서 db에 insert가 성공했는지 판단하면 될 것 같습니다
 
 def createTableFile():
@@ -100,7 +101,7 @@ def testStart():
   createdDate는 '%Y-%m-%d-%H-%M-%S'의 포맷으로 들어가게 됩니다.
   id값은 fileName과 CreatedDate를 합쳐서 만들게 됩니다.
   """
-  insertToFile(True,"testFileName2.text","./testRootDir", time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time())),"testUserId","tempURLFORs3")
+  insertToFile(True,"testFileName2.text","./testRootDir", time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time())),"testUserId")
   
   
   tableScan("File")
