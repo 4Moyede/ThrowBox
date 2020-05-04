@@ -1,6 +1,9 @@
 <template>
   <v-sheet style="margin-top: 60px">
-    <v-card elevation="0" class="pa-5" min-height="900"
+    <v-card
+      elevation="0"
+      class="pa-5"
+      min-height="900"
       @dragover.prevent
       @dragenter.prevent
       @drop.prevent="onDrop"
@@ -20,8 +23,8 @@
         <template v-slot:top>
           <v-row justify="space-between" class="mx-0">
             <div style="font-size: 22px; font-weight: 500; color: #343a40">
-              <v-icon color="grey800" size="30" class="mx-n3 mt-n1">mdi-power-on</v-icon>
-              Storage</div>
+              <v-icon color="grey800" size="30" class="mx-n2 mt-n1">mdi-power-on</v-icon>Storage
+            </div>
             <v-btn icon>
               <v-icon>mdi-settings</v-icon>
             </v-btn>
@@ -32,14 +35,21 @@
             <tr>
               <th :colspan="headers.length">
                 <v-row justify="start" class="ml-n3">
-                  <div v-for="(path, i) in testArray" :key="i" style="">
+                  <div v-for="(path, i) in testArray" :key="i" style>
                     <v-row class="mx-0" v-if="i < testArray.length-1">
                       <v-btn text class="pathBtnStyle" @click="moveSubFolderPath(path)">
                         <div>{{path}}</div>
                       </v-btn>
                       <v-icon>mdi-menu-right</v-icon>
                     </v-row>
-                    <v-btn @click="moveSubFolderPath(path)" class="pathBtnStyle" v-else outlined elevation="0" color="primary">
+                    <v-btn
+                      @click="moveSubFolderPath(path)"
+                      class="pathBtnStyle"
+                      v-else
+                      outlined
+                      elevation="0"
+                      color="primary"
+                    >
                       <div>{{path}}</div>
                     </v-btn>
                   </div>
@@ -58,8 +68,7 @@
           v-if="checkMultiSelectFile"
           v-slot:item.data-table-select="{ isSelected, select }"
         >
-          <v-simple-checkbox
-            color="green" value="isSelected" @input="select($event)"></v-simple-checkbox>
+          <v-simple-checkbox color="green" value="isSelected" @input="select($event)"></v-simple-checkbox>
         </template>
 
         <!-- Upload Loading Setting -->
@@ -105,9 +114,20 @@
         </template>
       </v-data-table>
       <v-divider />
+      <v-dialog v-model="fileSpecificDialog">
+        <v-card class="pa-4" elevation="0" outlined max-width="600">
+          <div>파일 이름</div>
+          <div>생성 날짜</div>
+          <div>용량</div>
+          <v-row>
+            <div>이름 변경</div>
+            <div>파일 삭제</div>
+          </v-row>
+        </v-card>
+      </v-dialog>
       <v-layout justify-center class="mt-8">
         <v-btn color="primary" @click="clickUploadButton">Click or Drag & Drop</v-btn>
-        <input ref="fileInput" style="display: none" type="file" @change="onFileChange">
+        <input ref="fileInput" style="display: none" type="file" @change="onFileChange" />
       </v-layout>
     </v-card>
   </v-sheet>
@@ -121,14 +141,7 @@ export default {
   components: {},
   data() {
     return {
-      testArray: [
-        'Name',
-        'Files',
-        'Documents',
-        'Downloads',
-        'this',
-        'isme',
-      ],
+      testArray: ['Name', 'Files', 'Documents', 'Downloads', 'this', 'isme'],
       storagePath: '',
       pathArray: [],
       userInfo: {
@@ -139,7 +152,7 @@ export default {
       search: '',
       tableHeaders: [
         { text: 'Name', value: 'fileName', align: 'left' },
-        { text: 'Created', value: 'createDate', align: 'right' },
+        { text: 'Created', value: 'createDate', align: 'center' },
         { text: 'Size', value: 'fileSize', align: 'right' },
         { value: 'action', align: 'center', sortable: false },
       ],
@@ -147,6 +160,7 @@ export default {
       dataLoading: false,
       uploadProgress: false,
       checkMultiSelectFile: false,
+      fileSpecificDialog: false,
     };
   },
   methods: {
@@ -190,7 +204,7 @@ export default {
         {
           fileName:
             'Test6Test6Test6Test6Test6Test6Test6Test6Test6Test6Test6Test6Test6Test6Test6Test6Test6Test6Test6',
-          createDate: '2020-01-05',
+          createDate: '2020.01.05 AM 10:00',
           fileSize: '32mb',
         },
         {
@@ -290,6 +304,10 @@ export default {
         console.log(2);
       }
     },
+
+    convertFileCapacity() {
+      // 파일용량 kb, mb, gb로 변환
+    },
   },
 
   async created() {
@@ -304,6 +322,10 @@ export default {
   text-transform: none !important;
 }
 .fileNameStyle {
+  max-width: 600px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .createdDateStyle {
 }
