@@ -11,7 +11,7 @@ AWS를 활용하여 드랍박스를 만드는 프로젝트입니다.
 ## 기술 Stack
 1. Frontend : Vue.js, Vuetify
 2. Backend : Django
-3. Database : DynamoDB
-4. Etc : Docker, EC2, S3 사용
+3. Database : MongoDB
+4. Etc : Docker, EC2, S3
 
 ## 향후 일정
