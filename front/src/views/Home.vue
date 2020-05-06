@@ -266,23 +266,22 @@ export default {
       this.uploadFile(event.target.files);
     },
     uploadFile(files) {
+      const formData = new FormData();
       for (let i = 0; i < files.length; i += 1) {
-        this.uploadForm[i] = {
-          file: files[i],
-          title: files[i].name,
-          author: this.userInfo.id,
-          path: this.storagePath,
-        };
+        formData.append('file', files[i]);
+        formData.append('name', files[i].name);
+        formData.append('author', this.userInfo.id);
+        formData.append('path', this.storagePath);
       }
-      console.log(this.uploadForm);
-      // this.$axios.post('/upload', this.uploadForm, { headers: { 'Content-Type': 'multipart/form-data' } })
-      //   .then((r) => {
-      //     this.uploadProgress = true;
-      //     console.log(r);
-      //   })
-      //   .catch((e) => {
-      //     console.log(e.message);
-      //   });
+      console.log(formData);
+      this.$axios.post('/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+        .then((r) => {
+          this.uploadProgress = true;
+          console.log(r);
+        })
+        .catch((e) => {
+          console.log(e.message);
+        });
     },
 
     // 파일 선택 및 옵션

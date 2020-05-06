@@ -9,6 +9,7 @@ from api.serializers import FileSerializer
 def file_list(request):
     files = File.objects.all()
     serializer = FileSerializer(files, many=True)
+    print(serializer.data)
     return JsonResponse(serializer.data, safe=False)
 
 
