@@ -166,13 +166,14 @@ export default {
   methods: {
     // 데이터 로드
     loadUserInfo() {
-      // this.$axios.get('/')
-      //   .then((r) => {
-      //     console.log(r);
-      //   })
-      //   .catch((e) => {
-      //     console.log(e);
-      //   });
+      this.$axios
+        .get('/fileList')
+        .then((r) => {
+          console.log(r);
+        })
+        .catch((e) => {
+          console.log(e);
+        });
     },
     loadFiles() {
       this.loadedFiles = [
