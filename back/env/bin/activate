@@ -37,7 +37,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="/home/jun/documents/Univ/B_Group_ThrowBox/back/env"
+VIRTUAL_ENV="/home/jun/documents/Univ/B_Team_ThrowBox/back/env"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"
