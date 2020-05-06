@@ -1,30 +1,38 @@
-from django.shortcuts import render
-import json
-import decimal
-from boto3.dynamodb.conditions import Key, Attr
-from botocore.exceptions import ClientError
-import time
-
-
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.parsers import JSONParser
-from back.api.models import File
-from back.api.serializers import FileSerializer
+from api.models import File
+from api.serializers import FileSerializer
 
-from rest_framework import status
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
 
-# Create your views here.
-@api_view(['POST'])
-def fileUpload(request,format=None):
-    """
-    
-    """
+@csrf_exempt
+def file_list(request):
+    files = File.objects.all()
+    serializer = FileSerializer(files, many=True)
+    return JsonResponse(serializer.data, safe=False)
+
+
+@csrf_exempt
+def file_detail(request, pk):
+    try:
+        snippet = File.objects.get(pk=pk)
+    except File.DoesNotExist:
+        return HttpResponse(status=404)
+
+    serializer = FileSerializer(snippet)
+    return JsonResponse(serializer.data)
+
+
+@csrf_exempt
+def file_upload(request):
     data = JSONParser().parse(request)
-    serializer = FileSerializer(data=data)
+    serializer = FileSerializer(File, data=data)
     if serializer.is_valid():
-      serializer.save()
-      return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)
-    return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        return JsonResponse(serializer.data)
+    return JsonResponse(serializer.errors, status=400)
+
+
+@csrf_exempt
+def file_download(request, pk):
+    pass
