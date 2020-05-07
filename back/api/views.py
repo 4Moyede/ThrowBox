@@ -1,39 +1,82 @@
-from django.http import HttpResponse, JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from rest_framework.parsers import JSONParser
+import json
+
+from django.http import HttpResponse
+from django.contrib.auth.models import User
+from django.http import Http404
+
 from api.models import File
-from api.serializers import FileSerializer
+from api.serializers import FileSerializer, UserSerializer
+
+from rest_framework import generics
+from rest_framework import permissions
+from rest_framework import status
+from rest_framework.views import APIView
+from rest_framework.response import Response
 
 
-@csrf_exempt
-def file_list(request):
-    files = File.objects.all()
-    serializer = FileSerializer(files, many=True)
-    print(serializer.data)
-    return JsonResponse(serializer.data, safe=False)
+class FileList(generics.ListCreateAPIView):
+    queryset = File.objects.all()
+    serializer_class = FileSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
 
-@csrf_exempt
-def file_detail(request, pk):
-    try:
-        snippet = File.objects.get(pk=pk)
-    except File.DoesNotExist:
-        return HttpResponse(status=404)
+class FileUpload(APIView):
+    def post(self, request, format=None):
+        serializer = FileSerializer(data=request.data)
+        for file in request.FILES.getlist('file'):
+            print(file)
 
-    serializer = FileSerializer(snippet)
-    return JsonResponse(serializer.data)
-
-
-@csrf_exempt
-def file_upload(request):
-    data = JSONParser().parse(request)
-    serializer = FileSerializer(File, data=data)
-    if serializer.is_valid():
-        serializer.save()
-        return JsonResponse(serializer.data)
-    return JsonResponse(serializer.errors, status=400)
+        if serializer.is_valid():
+            serializer.save(owner=self.request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@csrf_exempt
-def file_download(request, pk):
-    pass
+class FileDownload(APIView):
+    def get_object(self, pk):
+        try:
+            return File.objects.get(pk=pk)
+        except File.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk, format=None):
+        file = self.get_object(pk)
+        serializer = FileSerializer(file)
+        response_data = {}
+        response_data['s3Link'] = serializer.data.get('s3Link')
+        return HttpResponse(json.dumps(response_data), content_type="application/json")
+
+
+class UserList(generics.ListAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+
+class UserDetail(generics.RetrieveAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+
+# import boto3
+
+# class FileToURL(View):
+#     s3_client = boto3.client(
+#             's3',
+#             aws_access_key_id={aws_access_key_id},
+#             aws_secret_access_key={aws_secret_access_key}
+#         )
+#     def post(self, request):
+
+#         for file in request.FILES.getlist('file'): 
+#             self.s3_client.upload_fileobj(
+#                 file,
+#                 {bucket-name},
+#                 file.name,
+#                 ExtraArgs={
+#                     "ContentType": file.content_type
+#                 }
+#             )
+            
+#         file_urls = [f"https://s3.ap-northeast-2.amazonaws.com/{bucket-name}/{file.name}" for file in request.FILES.getlist('file')]
+
+#         return JsonResponse({'files':file_urls}, status=200)

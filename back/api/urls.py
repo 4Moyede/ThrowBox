@@ -2,8 +2,7 @@ from django.urls import path
 from api import views
 
 urlpatterns = [
-    path('fileList', views.file_list),
-    path('file/<int:pk>', views.file_detail),
-    path('upload', views.file_upload),
-    path('download', views.file_download),
+    path('fileList/', views.FileList.as_view()),
+    path('fileUpload/', views.FileUpload.as_view()),
+    path('fileDownload/<int:pk>/', views.FileDownload.as_view())
 ]
