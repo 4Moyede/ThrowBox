@@ -167,7 +167,7 @@ export default {
     // 데이터 로드
     loadUserInfo() {
       this.$axios
-        .get('/fileList')
+        .get('/fileList/')
         .then((r) => {
           console.log(r);
         })
@@ -270,11 +270,11 @@ export default {
       for (let i = 0; i < files.length; i += 1) {
         formData.append('file', files[i]);
         formData.append('name', files[i].name);
-        formData.append('author', this.userInfo.id);
-        formData.append('path', this.storagePath);
+        formData.append('author', 'Tester');
+        formData.append('path', 'root');
       }
       console.log(formData);
-      this.$axios.post('/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+      this.$axios.post('/fileUpload/', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
         .then((r) => {
           this.uploadProgress = true;
           console.log(r);
