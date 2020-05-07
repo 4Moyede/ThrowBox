@@ -5,13 +5,14 @@ from django.contrib.auth.models import User
 from django.http import Http404
 
 from api.models import File
-from api.serializers import FileSerializer, UserSerializer
+from api.serializers import FileSerializer
 
 from rest_framework import generics
 from rest_framework import permissions
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.request import Request
 
 
 class FileList(generics.ListCreateAPIView):
@@ -45,16 +46,6 @@ class FileDownload(APIView):
         response_data = {}
         response_data['s3Link'] = serializer.data.get('s3Link')
         return HttpResponse(json.dumps(response_data), content_type="application/json")
-
-
-class UserList(generics.ListAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-
-
-class UserDetail(generics.RetrieveAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
 
 
 # import boto3
