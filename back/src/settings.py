@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 """
 
 import os
+import json
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -40,6 +41,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'api.apps.ApiConfig',
+    'storages',
 
 ]
 
@@ -155,3 +157,21 @@ CORS_ALLOW_HEADERS = (
     'x-csrftoken',
     'x-requested-with',
 )
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT_DIR = os.path.dirname(BASE_DIR)
+
+# AWS Access
+AWS_SETTINGS_FILE = os.path.join(os.path.join(ROOT_DIR, '.aws_key'), 'aws_settings.json')
+aws_secret = json.loads(open(AWS_SETTINGS_FILE).read())
+AWS_ACCESS_KEY_ID = aws_secret['aws']['access_key_id']
+AWS_SECRET_ACCESS_KEY = aws_secret['aws']['secret_access_key']
+AWS_STORAGE_BUCKET_NAME = aws_secret['aws']['s3_bucket_name']
+
+AWS_REGION = 'ap-northeast-2'
+
+# S3 Storage
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+MEDIAFILES_LOCATION = 'media'
+STATICFILES_LOCATION = 'static'

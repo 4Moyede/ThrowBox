@@ -1,4 +1,5 @@
 .DS_Store
+.aws_key
 node_modules
 /dist
 #vscode
