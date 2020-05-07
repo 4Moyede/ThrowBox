@@ -272,6 +272,7 @@ export default {
         formData.append('name', files[i].name);
         formData.append('author', 'Tester');
         formData.append('path', 'root');
+        formData.append('isFile', false);
       }
       console.log(formData);
       this.$axios.post('/fileUpload/', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
