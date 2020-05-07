@@ -26,7 +26,6 @@ class FileUpload(APIView):
         serializer = FileSerializer(data=request.data)
         for file in request.FILES.getlist('file'):
             print(file)
-        print(request.data)
 
         if serializer.is_valid():
             serializer.save()
