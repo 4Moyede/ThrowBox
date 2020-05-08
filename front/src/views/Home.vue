@@ -115,7 +115,7 @@
                 <div class="createdDateStyle">{{item.createdDate}}</div>
               </td>
               <td>
-                <div class="fileSizeStyle">{{item.fileSize}}</div>
+                <div class="fileSizeStyle">{{getfileSize(item.fileSize)}}</div>
               </td>
               <td>
                 <div style="text-align: start">
@@ -171,7 +171,7 @@
           </v-row>
           <v-row class="mt-2 mx-0 ">
             <div class="dialogSubtitle">Size</div>
-            <div class="dialogContents"> {{fileSpecific.fileSize}}</div>
+            <div class="dialogContents"> {{getfileSize(fileSpecific.fileSize)}}</div>
           </v-row>
           <v-row class="mx-0 mt-4" justify="end">
             <v-btn class="mr-3" color="secondary">
@@ -234,13 +234,6 @@ export default {
       params: {
         search: '',
         path: '',
-        skip: 0,
-        limit: 15,
-      },
-      pagination: {
-        page: 1,
-        totalItems: 0,
-        rowsPerPage: 15,
       },
     };
   },
@@ -325,7 +318,7 @@ export default {
     uploadFile(files) {
       this.uploadProgress = true;
       const formData = new FormData();
-      const now = moment().format('YYYY-MM-DD, HH:mm');
+      const now = moment().format('YYYY-MM-DD HH:mm');
       for (let i = 0; i < files.length; i += 1) {
         formData.append('file', files[i]);
         formData.append('name', files[i].name);
@@ -352,7 +345,7 @@ export default {
     uploadFolder() {
       this.uploadProgress = true;
       const formData = new FormData();
-      const now = moment().format('YYYY-MM-DD, HH:mm');
+      const now = moment().format('YYYY-MM-DD HH:mm');
       formData.append('name', this.folderName);
       formData.append('author', 'Tester');
       formData.append('path', this.storagePath);
