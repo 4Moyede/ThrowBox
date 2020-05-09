@@ -171,7 +171,7 @@ AWS_STORAGE_BUCKET_NAME = aws_secret['aws']['s3_bucket_name']
 AWS_REGION = 'ap-northeast-2'
 
 # S3 Storage
-DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+DEFAULT_FILE_STORAGE = 'src.storages.MediaStorage'
+STATICFILES_STORAGE = 'src.storages.StaticStorage'
 MEDIAFILES_LOCATION = 'media'
 STATICFILES_LOCATION = 'static'

@@ -31,7 +31,7 @@ class FileUpload(APIView):
             print(file)
             session = boto3.session.Session(aws_access_key_id = AWS_ACCESS_KEY_ID, aws_secret_access_key = AWS_SECRET_ACCESS_KEY, region_name = AWS_REGION)
             s3 = session.resource('s3')
-            s3.Bucket(AWS_STORAGE_BUCKET_NAME).put_object(Key = "", Body ="")
+            s3.Bucket(AWS_STORAGE_BUCKET_NAME).put_object(Key = file.name, Body =file)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -53,26 +53,25 @@ class FileDownload(APIView):
         return HttpResponse(json.dumps(response_data), content_type="application/json")
 
 
-# import boto3
 
-# class FileToURL(View):
-#     s3_client = boto3.client(
-#             's3',
-#             aws_access_key_id={aws_access_key_id},
-#             aws_secret_access_key={aws_secret_access_key}
-#         )
-#     def post(self, request):
+class FileToURL(APIView):
+    s3_client = boto3.client(
+            's3',
+            aws_access_key_id=AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=AWS_SECRET_ACCESS_KEY
+        )
+    def post(self, request):
 
-#         for file in request.FILES.getlist('file'): 
-#             self.s3_client.upload_fileobj(
-#                 file,
-#                 {bucket-name},
-#                 file.name,
-#                 ExtraArgs={
-#                     "ContentType": file.content_type
-#                 }
-#             )
+        for file in request.FILES.getlist('file'): 
+            self.s3_client.upload_fileobj(
+                file,
+                {AWS_STORAGE_BUCKET_NAME},
+                file.name,
+             ExtraArgs={
+                    "ContentType": file.content_type
+                }
+            )
             
-#         file_urls = [f"https://s3.ap-northeast-2.amazonaws.com/{bucket-name}/{file.name}" for file in request.FILES.getlist('file')]
+        file_urls = [f"https://s3.ap-northeast-2.amazonaws.com/{AWS_STORAGE_BUCKET_NAME}/{file.name}" for file in request.FILES.getlist('file')]
 
-#         return JsonResponse({'files':file_urls}, status=200)
+        return JsonResponse({'files':file_urls}, status=200)
