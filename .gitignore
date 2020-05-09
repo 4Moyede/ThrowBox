@@ -5,9 +5,7 @@ node_modules
 #vscode
 .vscode
 # local env files
-.env.local
-.env.*.local
-venv
+env
 
 # Log files
 npm-debug.log*
@@ -34,8 +32,6 @@ yarn.lock
 *.pyc
 __pycache__/
 local_settings.py
-db.sqlite3
-db.sqlite3-journal
 media
 
 # If your build process includes running collectstatic, then you probably don't need or want to include staticfiles/
