@@ -1,18 +1,13 @@
 import json
-
 from django.http import HttpResponse
-from django.contrib.auth.models import User
 from django.http import Http404
 
 from api.models import File
 from api.serializers import FileSerializer
 
-from rest_framework import generics
-from rest_framework import permissions
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.request import Request
 
 
 class FileList(APIView):
