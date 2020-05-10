@@ -124,7 +124,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
-STATIC_URL = '/static/'
+STATIC_URL = '/front/'
 
 
 # CORS settings
@@ -158,8 +158,14 @@ CORS_ALLOW_HEADERS = (
     'x-requested-with',
 )
 
+
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT_DIR = os.path.dirname(BASE_DIR)
+STATIC_DIR = os.path.join(ROOT_DIR, 'front')
+STATICFILES_DIRS = [
+    STATIC_DIR,
+]
 
 # AWS Access
 AWS_SETTINGS_FILE = os.path.join(os.path.join(ROOT_DIR, '.aws_key'), 'aws_settings.json')

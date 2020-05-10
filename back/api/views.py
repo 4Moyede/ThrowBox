@@ -24,11 +24,15 @@ class FileList(APIView):
 
 class FileUpload(APIView):
     def post(self, request, format=None):
+        
         for file in request.FILES.getlist('file'):
             print(file)
             session = boto3.session.Session(aws_access_key_id = AWS_ACCESS_KEY_ID, aws_secret_access_key = AWS_SECRET_ACCESS_KEY, region_name = AWS_REGION)
             s3 = session.resource('s3')
             s3.Bucket(AWS_STORAGE_BUCKET_NAME).put_object(Key = file.name, Body =file)
+        file_urls = "https://throwbox.s3.ap-northeast-2.amazonaws.com/%s" % file.name
+        request.data['s3Link'] = file_urls
+        serializer = FileSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -46,30 +50,5 @@ class FileDownload(APIView):
         file = self.get_object(pk)
         serializer = FileSerializer(file)
         response_data = {}
-        response_data['s3Link'] = serializer.data.get('s3Link')
+        response_data[file.s3Link] = serializer.data.get(file.s3Link)
         return HttpResponse(json.dumps(response_data), content_type="application/json")
-
-
-
-class FileToURL(APIView):
-    s3_client = boto3.client(
-            's3',
-            aws_access_key_id=AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=AWS_SECRET_ACCESS_KEY
-        )
-    def post(self, request):
-
-        for file in request.FILES.getlist('file'): 
-            self.s3_client.upload_fileobj(
-                file,
-                {AWS_STORAGE_BUCKET_NAME},
-                file.name,
-             ExtraArgs={
-                    "ContentType": file.content_type
-                }
-            )
-            
-        file_urls = [f"https://s3.ap-northeast-2.amazonaws.com/{AWS_STORAGE_BUCKET_NAME}/{file.name}" for file in request.FILES.getlist('file')]
-
-        return JsonResponse({'files':file_urls}, status=200)
-    
