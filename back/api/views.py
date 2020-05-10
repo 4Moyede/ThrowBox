@@ -2,31 +2,28 @@ import json
 import boto3
 
 from django.http import HttpResponse
-from django.contrib.auth.models import User
 from django.http import Http404
 
 from api.models import File
 from api.serializers import FileSerializer
 
-from rest_framework import generics
-from rest_framework import permissions
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.request import Request
 
 from src.settings import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, AWS_REGION
 from boto3.session import Session
 
-class FileList(generics.ListCreateAPIView):
-    queryset = File.objects.all()
-    serializer_class = FileSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+class FileList(APIView):
+    def get(self, request, format=None):
+        path = request.GET.get('path', None)
+        queryset = File.objects.filter(path=path)
+        serializer = FileSerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class FileUpload(APIView):
     def post(self, request, format=None):
-        serializer = FileSerializer(data=request.data)
         for file in request.FILES.getlist('file'):
             print(file)
             session = boto3.session.Session(aws_access_key_id = AWS_ACCESS_KEY_ID, aws_secret_access_key = AWS_SECRET_ACCESS_KEY, region_name = AWS_REGION)
