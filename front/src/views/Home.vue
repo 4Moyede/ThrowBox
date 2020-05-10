@@ -10,8 +10,8 @@
         </v-row>
         <v-text-field
           class="mb-1 mt-3"
-          label="Outlined"
-          placeholder="Placeholder"
+          label="Folder name"
+          placeholder="Please Write Name"
           color="secondary"
           v-model="folderName"
         ></v-text-field>
@@ -370,27 +370,29 @@ export default {
 
     // 폴더 업로드
     uploadFolder() {
-      this.uploadProgress = true;
-      const formData = new FormData();
-      const now = moment().format('YYYY-MM-DD HH:mm');
-      formData.append('name', this.folderName);
-      formData.append('author', 'Tester');
-      formData.append('path', this.storagePath);
-      formData.append('isFile', false);
-      formData.append('createdDate', now);
-      formData.append('fileSize', 0);
-      this.$axios
-        .post('/fileUpload/', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        })
-        .then((r) => {
-          this.uploadProgress = false;
-          this.addFolderDialog = false;
-          this.loadedFiles.push(r.data);
-        })
-        .catch((e) => {
-          console.log(e.message);
-        });
+      if (this.folderName) {
+        this.uploadProgress = true;
+        const formData = new FormData();
+        const now = moment().format('YYYY-MM-DD HH:mm');
+        formData.append('name', this.folderName);
+        formData.append('author', 'Tester');
+        formData.append('path', this.storagePath);
+        formData.append('isFile', false);
+        formData.append('createdDate', now);
+        formData.append('fileSize', 0);
+        this.$axios
+          .post('/fileUpload/', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          })
+          .then((r) => {
+            this.uploadProgress = false;
+            this.addFolderDialog = false;
+            this.loadedFiles.push(r.data);
+          })
+          .catch((e) => {
+            console.log(e.message);
+          });
+      }
     },
     // 파일 및 폴더 클릭.
     clickFile(data) {
