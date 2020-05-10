@@ -383,11 +383,13 @@ export default {
         formData.append('createdDate', now);
         formData.append('fileSize', 0);
         this.$axios
-          .post('/fileUpload/', formData, {
+          .post('/folderUpload/', formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
           })
           .then((r) => {
+            console.log(r);
             this.uploadProgress = false;
+            this.folderName = '';
             this.addFolderDialog = false;
             this.loadedFiles.push(r.data);
           })
@@ -458,6 +460,7 @@ export default {
       return 'file';
     },
     getfileSize(x) {
+      if (x === 0) { return ''; }
       const s = ['bytes', 'kB', 'MB', 'GB', 'TB', 'PB'];
       const e = Math.floor(Math.log(x) / Math.log(1024));
       return `${(x / 1024 ** e).toFixed(2)} ${s[e]}`;
