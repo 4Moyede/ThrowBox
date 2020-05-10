@@ -1,6 +1,5 @@
 <template>
   <v-app id="inspire">
-
     <v-app-bar elevation="1" flat fixed>
       <v-btn icon color="secondary" @click="clickDrawer">
         <v-icon>mdi-menu</v-icon>
@@ -26,20 +25,16 @@
       <v-btn @click="logOut()" icon color="#3F51B5">
         <v-icon>mdi-account-arrow-right</v-icon>
       </v-btn>
-      <div @click="logOut()" v-if="!$vuetify.breakpoint.xs" style="color: #3F51B5; font-size: 18px">Log Out</div>
+      <div
+        @click="logOut()"
+        v-if="!$vuetify.breakpoint.xs"
+        style="color: #3F51B5; font-size: 18px"
+      >Log Out</div>
     </v-app-bar>
-    <v-navigation-drawer
-      v-model="drawer"
-      app
-      absolute
-    >
+    <v-navigation-drawer v-model="drawer" app absolute>
       <v-list style="margin-top: 60px">
         <v-list-item-group color="secondary" v-model="navIndex">
-          <v-list-item
-            v-for="(item, i) in navMenu"
-            :key="i"
-            :to="item.to"
-          >
+          <v-list-item v-for="(item, i) in navMenu" :key="i" :to="item.to">
             <v-list-item-icon>
               <v-icon v-text="item.icon"></v-icon>
             </v-list-item-icon>
@@ -51,24 +46,17 @@
       </v-list>
       <v-divider class="mx-3"></v-divider>
 
-        <v-icon class="ml-4 mt-4">mdi-server</v-icon>
-        <div class="mt-n6 mr-4" style="margin-left: 71px">
-          <div class="mb-2">Capacity</div>
-          <v-progress-linear
-            color="info"
-            height="10"
-            value="40"
-            striped
-          ></v-progress-linear>
-          <div style="font-size: 14px" class="mt-2">Total 100GB, 40GB used</div>
-        </div>
+      <v-icon class="ml-4 mt-4">mdi-server</v-icon>
+      <div class="mt-n6 mr-4" style="margin-left: 71px">
+        <div class="mb-2">Capacity</div>
+        <v-progress-linear color="info" height="10" value="40" striped></v-progress-linear>
+        <div style="font-size: 14px" class="mt-2">Total 100GB, 40GB used</div>
+      </div>
     </v-navigation-drawer>
     <v-content>
-      <router-view :search="searchFile"/>
+      <router-view :search="searchFile" />
     </v-content>
-    <v-footer>
-
-    </v-footer>
+    <v-footer></v-footer>
   </v-app>
 </template>
 
@@ -95,9 +83,7 @@ export default {
         this.drawer = true;
       }
     },
-    logOut() {
-
-    },
+    logOut() {},
     enterSearch() {
       console.log(this.searchFile);
     },
@@ -106,5 +92,13 @@ export default {
 </script>
 
 <style>
-
+a:link {
+  text-decoration: none;
+}
+a:visited {
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
 </style>
