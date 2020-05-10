@@ -1,5 +1,34 @@
 <template>
-  <v-sheet style="margin-top: 60px">
+  <v-sheet style="margin-top: 70px">
+    <v-dialog v-model="addFolderDialog" max-width="400">
+      <v-card max-width="400" elevation="0" class="pa-4">
+        <v-row justify="space-between" class="mx-0">
+          <div class="dialogTitle">Add Folder</div>
+          <v-btn class="mt-n1" icon @click="addFolderDialog = false">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-row>
+        <v-text-field
+          class="mb-1 mt-3"
+          label="Outlined"
+          placeholder="Placeholder"
+          color="secondary"
+          v-model="folderName"
+        ></v-text-field>
+        <v-row justify="end" class="mx-0">
+          <v-btn color="secondary" @click="uploadFolder">Create</v-btn>
+          <v-btn class="ml-3" @click="folderName = ''">clear</v-btn>
+        </v-row>
+      </v-card>
+    </v-dialog>
+    <v-overlay v-model="uploadProgress">
+      <v-progress-circular :size="120" width="10" color="primary" indeterminate></v-progress-circular>
+      <div style="color: #ffffff; font-size: 18px; margin-top: 10px">Uploading File...</div>
+    </v-overlay>
+    <v-overlay v-model="dataLoading">
+      <v-progress-circular :size="120" width="10" color="primary" indeterminate></v-progress-circular>
+      <div style="color: #ffffff; font-size: 18px; margin-top: 10px">Loading Files...</div>
+    </v-overlay>
     <v-card
       elevation="0"
       class="pa-5"
@@ -14,115 +43,145 @@
         class="elevation-0"
         :search="search"
         disable-pagination
-        hide-default-footer
         :loading="dataLoading"
         item-key="name"
-        :show-select="checkMultiSelectFile"
       >
         <!-- Header and Top Setting -->
         <template v-slot:top>
-          <v-row justify="space-between" class="mx-0">
+          <v-row justify="space-between" class="mx-0 mt-n1 mb-2">
             <div style="font-size: 22px; font-weight: 500; color: #343a40">
               <v-icon color="grey800" size="30" class="mx-n2 mt-n1">mdi-power-on</v-icon>Storage
             </div>
-            <v-btn icon>
-              <v-icon>mdi-settings</v-icon>
-            </v-btn>
           </v-row>
         </template>
         <template v-slot:header="{ props: { headers } }">
           <thead>
             <tr>
               <th :colspan="headers.length">
-                <v-row justify="start" class="ml-n3">
-                  <div v-for="(path, i) in testArray" :key="i" style>
-                    <v-row class="mx-0" v-if="i < testArray.length-1">
-                      <v-btn text class="pathBtnStyle" @click="moveSubFolderPath(path)">
+                <v-row justify="end" class="mr-n3 ml-0 mt-n1">
+                  <v-row justify="start" class="ml-n3">
+                    <div v-for="(path, i) in pathArray" :key="i">
+                      <v-row class="mx-0" v-if="i < pathArray.length-1">
+                        <v-btn text class="pathBtnStyle" @click="moveSubFolderPath(path)">
+                          <div>{{path}}</div>
+                        </v-btn>
+                        <v-icon>mdi-menu-right</v-icon>
+                      </v-row>
+                      <v-btn
+                        @click="moveSubFolderPath(path)"
+                        class="pathBtnStyle"
+                        v-else
+                        outlined
+                        elevation="0"
+                        color="primary"
+                      >
                         <div>{{path}}</div>
                       </v-btn>
-                      <v-icon>mdi-menu-right</v-icon>
-                    </v-row>
-                    <v-btn
-                      @click="moveSubFolderPath(path)"
-                      class="pathBtnStyle"
-                      v-else
-                      outlined
-                      elevation="0"
-                      color="primary"
-                    >
-                      <div>{{path}}</div>
-                    </v-btn>
-                  </div>
+                    </div>
+                  </v-row>
+                  <v-btn class="mt-1" icon color="primary" @click="addFolderDialog = true">
+                    <v-icon size="28">mdi-folder-plus</v-icon>
+                  </v-btn>
                 </v-row>
               </th>
             </tr>
           </thead>
         </template>
 
-        <!-- Multiple Select Setting -->
-        <template v-if="checkMultiSelectFile" v-slot:header.data-table-select="{ on, props }">
-          <v-simple-checkbox color="purple" v-bind="props" v-on="on"></v-simple-checkbox>
-        </template>
-
-        <template
-          v-if="checkMultiSelectFile"
-          v-slot:item.data-table-select="{ isSelected, select }"
-        >
-          <v-simple-checkbox color="green" value="isSelected" @input="select($event)"></v-simple-checkbox>
-        </template>
-
-        <!-- Upload Loading Setting -->
-        <template v-if="uploadProgress" v-slot:progress>
-          <v-progress-linear color="primary" :height="15" indeterminate></v-progress-linear>
-        </template>
-
         <!-- Table Body Setting -->
-        <template v-slot:item.fileName="{ item }">
-          <div @click="clickFile(item)" class="fileNameStyle">{{item.fileName}}</div>
-        </template>
-
-        <template v-slot:item.createdDate="{ item }">
-          <div @click="clickFile(item)" class="createdDateStyle">{{item.createdDate}}</div>
-        </template>
-
-        <template v-slot:item.fileSize="{ item }">
-          <div @click="clickFile(item)" class="fileSizeStyle">{{item.fileSize}}</div>
-        </template>
-
-        <template v-slot:item.action="{ item }">
-          <div style="text-align: start">
-            <v-btn @click="clickStar(item)" class="ml-n7" icon color="primary">
+        <template v-slot:body="{ items }">
+          <tbody>
+            <tr v-for="item in items" :key="item.name" @dblclick="clickFile(item)">
+              <td>
+                <v-row class="ml-n1" >
+                  <v-icon
+                    color="primary"
+                    style="margin-top:-2px; margin-right: 4px"
+                    v-if="!item.isFile"
+                  >mdi-folder-outline</v-icon>
+                  <div v-else style="margin-top:-2px; margin-right: 4px">
+                    <v-icon v-if="checkFileFormat(item.name) === 'image'">mdi-image-frame</v-icon>
+                    <v-icon v-if="checkFileFormat(item.name) === 'video'">mdi-movie-outline</v-icon>
+                    <v-icon
+                      v-if="checkFileFormat(item.name) === 'docs'"
+                    >mdi-file-document-edit-outline</v-icon>
+                    <v-icon v-if="checkFileFormat(item.name) === 'zip'">mdi-egg</v-icon>
+                    <v-icon v-if="checkFileFormat(item.name) === 'file'">mdi-file</v-icon>
+                  </div>
+                  <div class="fileNameStyle">{{item.name}}</div>
+                </v-row>
+              </td>
+              <td>
+                <div class="createdDateStyle">{{item.createdDate}}</div>
+              </td>
+              <td>
+                <div class="fileSizeStyle">{{getfileSize(item.fileSize)}}</div>
+              </td>
+              <td>
+                <div style="text-align: start">
+                  <!-- <v-btn @click="clickStar(item)" class="ml-n7" icon color="primary">
               <v-icon>mdi-star</v-icon>
-            </v-btn>
-
-            <v-menu transition="slide-y-transition" bottom>
-              <template v-slot:activator="{ on }">
-                <v-btn icon class="ml-0" v-on="on">
-                  <v-icon>mdi-dots-vertical</v-icon>
-                </v-btn>
-              </template>
-              <v-list>
-                <v-list-item>
-                  <v-list-item-title @click="renameFile(item)">Rename</v-list-item-title>
-                </v-list-item>
-                <v-list-item>
-                  <v-list-item-title @click="deleteFile(item)">Delete</v-list-item-title>
-                </v-list-item>
-              </v-list>
-            </v-menu>
-          </div>
+                  </v-btn>-->
+                  <v-menu transition="slide-y-transition" bottom>
+                    <template v-slot:activator="{ on }">
+                      <v-btn icon class="ml-n6" v-on="on">
+                        <v-icon>mdi-dots-vertical</v-icon>
+                      </v-btn>
+                    </template>
+                    <v-list>
+                      <v-list-item>
+                        <v-list-item-title @click="renameFile(item)">Rename</v-list-item-title>
+                      </v-list-item>
+                      <v-list-item>
+                        <v-list-item-title @click="deleteFile(item)">Delete</v-list-item-title>
+                      </v-list-item>
+                    </v-list>
+                  </v-menu>
+                </div>
+              </td>
+            </tr>
+          </tbody>
         </template>
       </v-data-table>
       <v-divider />
-      <v-dialog v-model="fileSpecificDialog">
-        <v-card class="pa-4" elevation="0" outlined max-width="600">
-          <div>파일 이름</div>
-          <div>생성 날짜</div>
-          <div>용량</div>
-          <v-row>
-            <div>이름 변경</div>
-            <div>파일 삭제</div>
+      <v-dialog v-model="fileSpecificDialog" max-width="400">
+        <v-card elevation="0" outlined max-width="400">
+          <v-row class="mx-3 mt-3 mb-1" justify="space-between">
+            <div class="dialogTitle">File Specific</div>
+            <v-btn icon @click="fileSpecificDialog = false">
+              <v-icon size="28">mdi-close</v-icon>
+            </v-btn>
           </v-row>
+          <v-divider></v-divider>
+          <v-row class="mt-4 mx-0 ">
+            <div class="dialogSubtitle">Name</div>
+            <div class="dialogContents">{{fileSpecific.name}}</div>
+          </v-row>
+          <v-row class="mt-2 mx-0 ">
+            <div class="dialogSubtitle">Owner</div>
+            <div class="dialogContents">Owner: {{fileSpecific.author}}</div>
+          </v-row>
+          <v-row class="mt-2 mx-0 ">
+            <div class="dialogSubtitle">Created Date</div>
+            <div class="dialogContents">{{fileSpecific.createdDate}}</div>
+          </v-row>
+          <v-row class="mt-2 mx-0 ">
+            <div class="dialogSubtitle">Path</div>
+            <div class="dialogContents">{{storagePath}}</div>
+          </v-row>
+          <v-row class="mt-2 mx-0 ">
+            <div class="dialogSubtitle">Size</div>
+            <div class="dialogContents"> {{getfileSize(fileSpecific.fileSize)}}</div>
+          </v-row>
+          <v-row class="mx-0 mt-4" justify="end">
+            <v-btn class="mr-3" color="secondary">
+              <div>Rename</div>
+            </v-btn>
+            <v-btn class="mr-4">
+              <div>Delete</div>
+            </v-btn>
+          </v-row>
+          <div style="height: 15px"></div>
         </v-card>
       </v-dialog>
       <v-layout justify-center class="mt-8">
@@ -135,39 +194,64 @@
 
 <script>
 // @ is an alias to /src
+import moment from 'moment';
 
 export default {
   name: 'Home',
+  props: {
+    search: {
+      type: String,
+      default: '',
+    },
+  },
   components: {},
   data() {
     return {
-      testArray: ['Name', 'Files', 'Documents', 'Downloads', 'this', 'isme'],
-      storagePath: '',
-      pathArray: [],
+      folderName: '',
+      storagePath: 'root',
+      pathArray: ['root'],
       userInfo: {
         id: '',
         email: '',
       },
       uploadForm: [],
-      search: '',
       tableHeaders: [
-        { text: 'Name', value: 'fileName', align: 'left' },
+        { text: 'Name', value: 'name', align: 'left' },
         { text: 'Created', value: 'createDate', align: 'center' },
         { text: 'Size', value: 'fileSize', align: 'right' },
         { value: 'action', align: 'center', sortable: false },
       ],
       loadedFiles: [],
-      dataLoading: false,
-      uploadProgress: false,
-      checkMultiSelectFile: false,
+      fileSpecific: {},
+      // dialog
+      addFolderDialog: false,
       fileSpecificDialog: false,
+      //
+      dataLoading: true,
+      uploadProgress: false,
+
+      // pagination & params
+      params: {
+        search: '',
+        path: '',
+      },
     };
+  },
+  // watch: {
+  //   search(newValue, oldValue) {
+  //     console.log(newValue);
+  //     console.log(oldValue);
+  //   },
+  // },
+  async created() {
+    // await this.loadUserInfo();
+    await this.loadFiles();
   },
   methods: {
     // 데이터 로드
     loadUserInfo() {
       this.$axios
-        .get('/fileList/')
+        .get('/userInfo/')
         .then((r) => {
           console.log(r);
         })
@@ -176,85 +260,50 @@ export default {
         });
     },
     loadFiles() {
-      this.loadedFiles = [
-        {
-          fileName: 'Test1',
-          createDate: '2019-10-11',
-          fileSize: '39kb',
-        },
-        {
-          fileName: 'Test2',
-          createDate: '2019-10-13',
-          fileSize: '139kb',
-        },
-        {
-          fileName: 'Test3',
-          createDate: '2019-12-11',
-          fileSize: '394kb',
-        },
-        {
-          fileName: 'Test4',
-          createDate: '2019-12-13',
-          fileSize: '392mb',
-        },
-        {
-          fileName: 'Test5',
-          createDate: '2019-12-15',
-          fileSize: '3229kb',
-        },
-        {
-          fileName:
-            'Test6Test6Test6Test6Test6Test6Test6Test6Test6Test6Test6Test6Test6Test6Test6Test6Test6Test6Test6',
-          createDate: '2020.01.05 AM 10:00',
-          fileSize: '32mb',
-        },
-        {
-          fileName: 'Test7',
-          createDate: '2020-02-19',
-          fileSize: '36kb',
-        },
-        {
-          fileName: 'Test8',
-          createDate: '2020-03-29',
-          fileSize: '12kb',
-        },
-      ];
-      // this.$axios.get('/')
-      //   .then((r) => {
-      //     this.loadedFiles = r.data;
-      //     for (let i = 0; i < this.loadedFiles.length; i += 1) {
-      //       for (let j = 0; j < this.loadedFiles[i].favorite.length; j += 1) {
-      //         const favAuthor = this.loadedFiles[i].favorite[j];
-      //         if (favAuthor === this.userInfo.id) {
-      //           this.loadFiles[i].isFavorite = true;
-      //         } else {
-      //           this.loadFiles[i].isFavorite = false;
-      //         }
-      //       }
-      //     }
-      //   })
-      //   .catch((e) => {
-      //     console.log(e);
-      //   });
+      this.params.path = this.storagePath;
+      this.$axios
+        .get('/fileList/', { params: this.params })
+        .then((r) => {
+          this.loadedFiles = r.data;
+          this.dataLoading = false;
+          console.log(this.loadedFiles);
+          // favorite 추구 구현.
+          // for (let i = 0; i < this.loadedFiles.length; i += 1) {
+          //   for (let j = 0; j < this.loadedFiles[i].favorite.length; j += 1) {
+          //     const favAuthor = this.loadedFiles[i].favorite[j];
+          //     if (favAuthor === this.userInfo.id) {
+          //       this.loadFiles[i].isFavorite = true;
+          //     } else {
+          //       this.loadFiles[i].isFavorite = false;
+          //     }
+          //   }
+          // }
+        })
+        .catch((e) => {
+          console.log(e);
+        });
     },
+
+    // 폴더 이동 관련
     moveSubFolderPath(path) {
       this.storagePath = '';
-      for (let i = 0; i < this.testArray.length; i += 1) {
-        const element = this.testArray[i];
+      for (let i = 0; i < this.pathArray.length; i += 1) {
+        const element = this.pathArray[i];
         this.storagePath += element;
         if (element === path) {
-          this.testArray = this.testArray.slice(0, i + 1);
+          this.pathArray = this.pathArray.slice(0, i + 1);
           break;
         }
         this.storagePath += ',';
       }
-      // this.loadFiles();
+      this.loadFiles();
     },
     onClickFolder(path) {
       this.storagePath += `,${path}`;
       this.pathArray.push(path);
-      // this.loadFiles();
+      this.loadFiles();
     },
+
     // 파일 업로드 관련
     onDrop(event) {
       this.uploadFile(event.dataTransfer.files);
@@ -265,39 +314,75 @@ export default {
     onFileChange(event) {
       this.uploadFile(event.target.files);
     },
+    // 파일 업로드
     uploadFile(files) {
+      this.uploadProgress = true;
       const formData = new FormData();
+      const now = moment().format('YYYY-MM-DD HH:mm');
       for (let i = 0; i < files.length; i += 1) {
         formData.append('file', files[i]);
         formData.append('name', files[i].name);
         formData.append('author', 'Tester');
         formData.append('path', 'root');
-        formData.append('isFile', false);
+        formData.append('isFile', true);
+        formData.append('createdDate', now);
       }
       console.log(formData);
-      this.$axios.post('/fileUpload/', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+      this.$axios
+        .post('/fileUpload/', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
         .then((r) => {
-          this.uploadProgress = true;
-          console.log(r);
+          this.uploadProgress = false;
+          this.loadedFiles.push(r.data);
         })
         .catch((e) => {
           console.log(e.message);
         });
     },
 
-    // 파일 선택 및 옵션
-    clickFile(data) {
-      console.log(data);
-      // 파일일 경우, Dialog - 파일 상세 정보 및 다운로드 버튼
-      // 폴더일 경우, path 변경 및 데이터 로드
-      this.onClickFolder(data.fileName);
+    // 폴더 업로드
+    uploadFolder() {
+      this.uploadProgress = true;
+      const formData = new FormData();
+      const now = moment().format('YYYY-MM-DD HH:mm');
+      formData.append('name', this.folderName);
+      formData.append('author', 'Tester');
+      formData.append('path', this.storagePath);
+      formData.append('isFile', false);
+      formData.append('createdDate', now);
+      this.$axios
+        .post('/fileUpload/', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
+        .then((r) => {
+          this.uploadProgress = false;
+          this.addFolderDialog = false;
+          this.loadedFiles.push(r.data);
+        })
+        .catch((e) => {
+          console.log(e.message);
+        });
     },
+    // 파일 및 폴더 클릭.
+    clickFile(data) {
+      if (data.isFile) {
+        this.fileSpecific = data;
+        this.fileSpecificDialog = true;
+      } else {
+        this.onClickFolder(data.name);
+      }
+    },
+
+    // 파일 삭제
     deleteFile(data) {
       console.log(data);
     },
+    // 이름 변경
     renameFile(data) {
       console.log(data);
     },
+    // 즐겨찾기
     clickStar(data) {
       if (data.isFavorite) {
         console.log(1);
@@ -305,15 +390,46 @@ export default {
         console.log(2);
       }
     },
-
-    convertFileCapacity() {
-      // 파일용량 kb, mb, gb로 변환
+    checkFileFormat(format) {
+      const fileFormat = format.slice(format.indexOf('.') + 1);
+      if (
+        fileFormat === 'jpg'
+        || fileFormat === 'gif'
+        || fileFormat === 'png'
+        || fileFormat === 'svg'
+        || fileFormat === 'bmp'
+        || fileFormat === 'jpeg'
+      ) {
+        return 'image';
+      }
+      if (
+        fileFormat === 'mp4'
+        || fileFormat === 'avi'
+        || fileFormat === 'mkv'
+      ) {
+        return 'video';
+      }
+      if (
+        fileFormat === 'doc'
+        || fileFormat === 'hwp'
+        || fileFormat === 'ppt'
+        || fileFormat === 'xlsx'
+        || fileFormat === 'pdf'
+        || fileFormat === 'xls'
+        || fileFormat === 'docx'
+      ) {
+        return 'docs';
+      }
+      if (fileFormat === 'zip' || fileFormat === '7z' || fileFormat === 'rar') {
+        return 'zip';
+      }
+      return 'file';
     },
-  },
-
-  async created() {
-    await this.loadUserInfo();
-    await this.loadFiles();
+    getfileSize(x) {
+      const s = ['bytes', 'kB', 'MB', 'GB', 'TB', 'PB'];
+      const e = Math.floor(Math.log(x) / Math.log(1024));
+      return `${(x / 1024 ** e).toFixed(2)} ${s[e]}`;
+    },
   },
 };
 </script>
@@ -333,5 +449,22 @@ export default {
 }
 .fileSizeStyle {
   white-space: nowrap;
+}
+.dialogTitle{
+  color: #3F51B5;
+  font-weight: 400;
+  font-size: 20px
+}
+.dialogSubtitle{
+  margin-left: 14px;
+  color: #343a40;
+  font-weight: 500;
+  font-size: 16px;
+  width: 110px
+}
+.dialogContents{
+  color: #5a5a5a;
+  font-weight: 400;
+  font-size: 16px
 }
 </style>
