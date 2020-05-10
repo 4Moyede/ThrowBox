@@ -8,5 +8,4 @@ from api.models import File
 class FileSerializer(serializers.ModelSerializer):
     class Meta:
         model = File
-        fields = ['id', 'author', 'isFile', 'name', 'path', 's3Link', 'deletedDate']
-
+        fields = ['id', 'author', 'isFile', 'name', 'path', 's3Link', 'fileSize', 'createdDate', 'deletedDate']

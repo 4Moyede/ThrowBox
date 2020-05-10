@@ -7,6 +7,6 @@ class File(models.Model):
     name = models.CharField(max_length=256)
     path = models.TextField()
     s3Link = models.TextField(null=True)
-    filesize = models.IntegerField()
-    createdDate = models.DateField(default=None, null=True)
+    fileSize = models.IntegerField()
+    createdDate = models.TextField()
     deletedDate = models.DateField(default=None, null=True)
