@@ -75,3 +75,4 @@ class FileToURL(APIView):
         file_urls = [f"https://s3.ap-northeast-2.amazonaws.com/{AWS_STORAGE_BUCKET_NAME}/{file.name}" for file in request.FILES.getlist('file')]
 
         return JsonResponse({'files':file_urls}, status=200)
+    
