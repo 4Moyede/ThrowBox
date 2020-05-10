@@ -17,6 +17,7 @@
         filled
         full-width
         single-line
+        @keydown="enterSearch"
       ></v-text-field>
       <v-spacer></v-spacer>
       <v-btn v-if="$vuetify.breakpoint.xs" icon color="#3F51B5">
@@ -63,7 +64,7 @@
         </div>
     </v-navigation-drawer>
     <v-content>
-      <router-view/>
+      <router-view :search="searchFile"/>
     </v-content>
     <v-footer>
 
@@ -96,6 +97,9 @@ export default {
     },
     logOut() {
 
+    },
+    enterSearch() {
+      console.log(this.searchFile);
     },
   },
 };
