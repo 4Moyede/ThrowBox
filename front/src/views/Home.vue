@@ -323,7 +323,7 @@ export default {
         formData.append('file', files[i]);
         formData.append('name', files[i].name);
         formData.append('author', 'Tester');
-        formData.append('path', 'root');
+        formData.append('path', this.storagePath);
         formData.append('isFile', true);
         formData.append('createdDate', now);
       }
