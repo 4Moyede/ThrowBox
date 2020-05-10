@@ -42,9 +42,9 @@
         :items="loadedFiles"
         class="elevation-0"
         :search="search"
-        disable-pagination
         :loading="dataLoading"
         item-key="name"
+        sort-by="createdDate"
       >
         <!-- Header and Top Setting -->
         <template v-slot:top>
@@ -93,7 +93,7 @@
           <tbody>
             <tr v-for="item in items" :key="item.name" @dblclick="clickFile(item)">
               <td>
-                <v-row class="ml-n1" >
+                <v-row class="ml-n1">
                   <v-icon
                     color="primary"
                     style="margin-top:-2px; margin-right: 4px"
@@ -112,10 +112,10 @@
                 </v-row>
               </td>
               <td>
-                <div class="createdDateStyle">{{item.createdDate}}</div>
+                <div class="createdDateStyle" style="text-align: end">{{item.createdDate}}</div>
               </td>
               <td>
-                <div class="fileSizeStyle">{{getfileSize(item.fileSize)}}</div>
+                <div class="fileSizeStyle" style="text-align: end">{{getfileSize(item.fileSize)}}</div>
               </td>
               <td>
                 <div style="text-align: start">
@@ -144,8 +144,8 @@
         </template>
       </v-data-table>
       <v-divider />
-      <v-dialog v-model="fileSpecificDialog" max-width="400">
-        <v-card elevation="0" outlined max-width="400">
+      <v-dialog v-model="fileSpecificDialog" max-width="500">
+        <v-card elevation="0" outlined max-width="500">
           <v-row class="mx-3 mt-3 mb-1" justify="space-between">
             <div class="dialogTitle">File Specific</div>
             <v-btn icon @click="fileSpecificDialog = false">
@@ -153,32 +153,56 @@
             </v-btn>
           </v-row>
           <v-divider></v-divider>
-          <v-row class="mt-4 mx-0 ">
-            <div class="dialogSubtitle">Name</div>
-            <div class="dialogContents">{{fileSpecific.name}}</div>
+          <v-row class="mt-2 mx-0">
+            <v-col cols="4">
+              <div class="dialogSubtitle">Name</div>
+            </v-col>
+            <v-col cols="8">
+              <div class="dialogContents">{{fileSpecific.name}}</div>
+            </v-col>
           </v-row>
-          <v-row class="mt-2 mx-0 ">
-            <div class="dialogSubtitle">Owner</div>
-            <div class="dialogContents">Owner: {{fileSpecific.author}}</div>
+          <v-row class="mt-n1 mx-0">
+            <v-col cols="4">
+              <div class="dialogSubtitle">Owner</div>
+            </v-col>
+            <v-col cols="8">
+              <div class="dialogContents">{{fileSpecific.author}}</div>
+            </v-col>
           </v-row>
-          <v-row class="mt-2 mx-0 ">
-            <div class="dialogSubtitle">Created Date</div>
-            <div class="dialogContents">{{fileSpecific.createdDate}}</div>
+          <v-row class="mt-n1 mx-0">
+            <v-col cols="4">
+              <div class="dialogSubtitle">Created Date</div>
+            </v-col>
+            <v-col cols="8">
+              <div class="dialogContents">{{fileSpecific.createdDate}}</div>
+            </v-col>
           </v-row>
-          <v-row class="mt-2 mx-0 ">
-            <div class="dialogSubtitle">Path</div>
-            <div class="dialogContents">{{storagePath}}</div>
+          <v-row class="mt-n1 mx-0">
+            <v-col cols="4">
+              <div class="dialogSubtitle">Path</div>
+            </v-col>
+            <v-col cols="8">
+              <div class="dialogContents">{{storagePath}}</div>
+            </v-col>
           </v-row>
-          <v-row class="mt-2 mx-0 ">
-            <div class="dialogSubtitle">Size</div>
-            <div class="dialogContents"> {{getfileSize(fileSpecific.fileSize)}}</div>
+          <v-row class="mt-n1 mx-0">
+            <v-col cols="4">
+              <div class="dialogSubtitle">Size</div>
+            </v-col>
+            <v-col cols="8">
+              <div class="dialogContents">{{getfileSize(fileSpecific.fileSize)}}</div>
+            </v-col>
           </v-row>
           <v-row class="mx-0 mt-4" justify="end">
-            <v-btn class="mr-3" color="secondary">
-              <div>Rename</div>
+            <v-btn class="mr-3" color="secondary" ref="download">
+              <a
+                :href="fileSpecific.s3Link"
+                :download="fileSpecific.s3Link"
+                style="color: #ffffff"
+              >Download</a>
             </v-btn>
-            <v-btn class="mr-4">
-              <div>Delete</div>
+            <v-btn color="primary" class="mr-4">
+              <div>Share</div>
             </v-btn>
           </v-row>
           <div style="height: 15px"></div>
@@ -216,9 +240,9 @@ export default {
       },
       uploadForm: [],
       tableHeaders: [
-        { text: 'Name', value: 'name', align: 'left' },
-        { text: 'Created', value: 'createDate', align: 'center' },
-        { text: 'Size', value: 'fileSize', align: 'right' },
+        { text: 'Name', value: 'name', align: 'start' },
+        { text: 'Created', value: 'createDate', align: 'end' },
+        { text: 'Size', value: 'fileSize', align: 'end' },
         { value: 'action', align: 'center', sortable: false },
       ],
       loadedFiles: [],
@@ -317,6 +341,7 @@ export default {
     // 파일 업로드
     uploadFile(files) {
       this.uploadProgress = true;
+      console.log(files);
       const formData = new FormData();
       const now = moment().format('YYYY-MM-DD HH:mm');
       for (let i = 0; i < files.length; i += 1) {
@@ -326,6 +351,7 @@ export default {
         formData.append('path', this.storagePath);
         formData.append('isFile', true);
         formData.append('createdDate', now);
+        formData.append('fileSize', files[i].size);
       }
       console.log(formData);
       this.$axios
@@ -333,6 +359,7 @@ export default {
           headers: { 'Content-Type': 'multipart/form-data' },
         })
         .then((r) => {
+          console.log(r.data);
           this.uploadProgress = false;
           this.loadedFiles.push(r.data);
         })
@@ -351,6 +378,7 @@ export default {
       formData.append('path', this.storagePath);
       formData.append('isFile', false);
       formData.append('createdDate', now);
+      formData.append('fileSize', 0);
       this.$axios
         .post('/fileUpload/', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
@@ -450,21 +478,20 @@ export default {
 .fileSizeStyle {
   white-space: nowrap;
 }
-.dialogTitle{
-  color: #3F51B5;
+.dialogTitle {
+  color: #3f51b5;
   font-weight: 400;
-  font-size: 20px
+  font-size: 20px;
 }
-.dialogSubtitle{
+.dialogSubtitle {
   margin-left: 14px;
   color: #343a40;
   font-weight: 500;
   font-size: 16px;
-  width: 110px
 }
-.dialogContents{
+.dialogContents {
   color: #5a5a5a;
   font-weight: 400;
-  font-size: 16px
+  font-size: 16px;
 }
 </style>
