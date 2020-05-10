@@ -45,6 +45,7 @@
         :loading="dataLoading"
         item-key="name"
         sort-by="createdDate"
+        :sort-desc="true"
       >
         <!-- Header and Top Setting -->
         <template v-slot:top>
@@ -359,9 +360,10 @@ export default {
           headers: { 'Content-Type': 'multipart/form-data' },
         })
         .then((r) => {
-          console.log(r.data);
           this.uploadProgress = false;
-          this.loadedFiles.push(r.data);
+          for (let index = 0; index < r.data.length; index += 1) {
+            this.loadedFiles.push(r.data[index]);
+          }
         })
         .catch((e) => {
           console.log(e.message);

@@ -24,20 +24,31 @@ class FileList(APIView):
 
 class FileUpload(APIView):
     def post(self, request, format=None):
-        
-        for file in request.FILES.getlist('file'):
-            print(file)
-            session = boto3.session.Session(aws_access_key_id = AWS_ACCESS_KEY_ID, aws_secret_access_key = AWS_SECRET_ACCESS_KEY, region_name = AWS_REGION)
-            s3 = session.resource('s3')
-            s3.Bucket(AWS_STORAGE_BUCKET_NAME).put_object(Key = file.name, Body =file)
-        file_urls = "https://throwbox.s3.ap-northeast-2.amazonaws.com/%s" % file.name
-        request.data['s3Link'] = file_urls
-        serializer = FileSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        session = boto3.session.Session(aws_access_key_id = AWS_ACCESS_KEY_ID, aws_secret_access_key = AWS_SECRET_ACCESS_KEY, region_name = AWS_REGION)
+        s3 = session.resource('s3')
+        uploadedList = []
+        uploadedFile = request.data.dict()
+        for idx, file in enumerate(request.FILES.getlist('file')):
+            uploadedFile['isFile'] = request.data.getlist('isFile')[idx]
+            if(uploadedFile['isFile']):
+                s3.Bucket(AWS_STORAGE_BUCKET_NAME).put_object(Key = file.name, Body =file)
+                file_urls = "https://throwbox.s3.ap-northeast-2.amazonaws.com/%s" % file.name
+                uploadedFile['s3Link'] = file_urls
+            
+            uploadedFile['name'] = request.data.getlist('name')[idx]
+            uploadedFile['author'] = request.data.getlist('author')[idx]
+            
+            uploadedFile['path'] = request.data.getlist('path')[idx]
+            uploadedFile['fileSize'] = request.data.getlist('fileSize')[idx]
+            uploadedFile['createdDate'] = request.data.getlist('createdDate')[idx]
 
+            serializer = FileSerializer(data=uploadedFile)
+            if serializer.is_valid():
+                serializer.save()
+                uploadedList.append(serializer.data)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(uploadedList, status=status.HTTP_201_CREATED)
 
 class FileDownload(APIView):
     def get_object(self, pk):
