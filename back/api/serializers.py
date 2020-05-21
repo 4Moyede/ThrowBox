@@ -1,10 +1,9 @@
-from django.contrib.auth.models import User
+from rest_meets_djongo.serializers import DjongoModelSerializer
 
-from rest_framework import serializers
 from api.models import File
 
 
-class FileSerializer(serializers.ModelSerializer):
+class FileSerializer(DjongoModelSerializer):
     class Meta:
         model = File
-        fields = ['author', 'isFile', 'name', 'path', 's3Link', 'fileSize', 'createdDate', 'deletedDate']
+        fields = '__all__'
