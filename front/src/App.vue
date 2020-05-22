@@ -1,11 +1,16 @@
 <template>
   <v-app id="inspire">
     <v-app-bar elevation="1" flat fixed>
-      <v-btn icon color="secondary" @click="clickDrawer">
+      <v-btn v-if="isLogin" icon color="secondary" @click="clickDrawer">
         <v-icon>mdi-menu</v-icon>
       </v-btn>
+      <v-btn v-else icon color="secondary" style="margin-right: -20px">
+        <v-icon>mdi-package</v-icon>
+      </v-btn>
       <v-toolbar-title style="color: #3F51B5">ThrowBox</v-toolbar-title>
+
       <v-text-field
+        v-if="isLogin"
         v-model="searchFile"
         style="max-width: 600px; margin-left: 95px"
         prepend-inner-icon="mdi-magnify"
@@ -18,20 +23,38 @@
         single-line
         @keydown="enterSearch"
       ></v-text-field>
+
       <v-spacer></v-spacer>
+
       <v-btn v-if="$vuetify.breakpoint.xs" icon color="#3F51B5">
         <v-icon>mdi-magnify</v-icon>
       </v-btn>
-      <v-btn @click="logOut()" icon color="#3F51B5">
-        <v-icon>mdi-account-arrow-right</v-icon>
-      </v-btn>
-      <div
-        @click="logOut()"
-        v-if="!$vuetify.breakpoint.xs"
-        style="color: #3F51B5; font-size: 18px"
-      >Log Out</div>
+      <div v-if="isLogin">
+        <v-btn @click="logOut()" icon color="#3F51B5">
+          <v-icon>mdi-account-arrow-right</v-icon>
+        </v-btn>
+        <a
+          @click="logOut()"
+          v-if="!$vuetify.breakpoint.xs"
+          style="color: #3F51B5; font-size: 18px"
+        >LOG OUT</a>
+      </div>
+
+      <div v-else>
+        <v-toolbar-title style="color: #3F51B5">
+          <v-btn @click="logOut()" icon color="#3F51B5">
+            <v-icon>mdi-account-arrow-left</v-icon>
+          </v-btn>
+          <a
+            @click="$router.push('/login')"
+            v-if="!$vuetify.breakpoint.xs"
+            style="color: #3F51B5; font-size: 18px;"
+          >LOG IN</a>
+        </v-toolbar-title>
+      </div>
     </v-app-bar>
-    <v-navigation-drawer v-model="drawer" app absolute>
+
+    <v-navigation-drawer v-model="drawer" v-if="isLogin" app absolute>
       <v-list style="margin-top: 60px">
         <v-list-item-group color="secondary" v-model="navIndex">
           <v-list-item v-for="(item, i) in navMenu" :key="i" :to="item.to">
@@ -53,9 +76,11 @@
         <div style="font-size: 14px" class="mt-2">Total 100GB, 40GB used</div>
       </div>
     </v-navigation-drawer>
+
     <v-content>
       <router-view :search="searchFile" />
     </v-content>
+
     <v-footer></v-footer>
   </v-app>
 </template>
@@ -73,7 +98,16 @@ export default {
         { text: 'Recycle Bin', icon: 'mdi-delete', to: { path: '/bin' } },
       ],
       searchFile: '',
+      isLogin: false,
     };
+  },
+  created() {
+    if (!this.$store.getters.getAccessToken) {
+      this.drawer = false;
+    } else {
+      this.drawer = true;
+      this.isLogin = true;
+    }
   },
   methods: {
     clickDrawer() {
@@ -92,13 +126,13 @@ export default {
 </script>
 
 <style>
+a {
+  text-decoration: none;
+}
 a:link {
   text-decoration: none;
 }
 a:visited {
   text-decoration: none;
-}
-a:hover {
-  text-decoration: underline;
 }
 </style>
