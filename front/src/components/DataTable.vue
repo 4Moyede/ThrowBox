@@ -1,5 +1,9 @@
 <template>
   <v-sheet style="margin-top: 70px">
+    <v-overlay v-model="loadingData">
+      <v-progress-circular :size="120" width="10" color="primary" indeterminate></v-progress-circular>
+      <div style="color: #ffffff; font-size: 18px; margin-top: 10px">Loading Files...</div>
+    </v-overlay>
     <v-dialog v-model="addFolderDialog" max-width="400">
       <v-card max-width="400" elevation="0" class="pa-4">
         <v-row justify="space-between" class="mx-0">
@@ -47,7 +51,8 @@
         <template v-slot:top>
           <v-row justify="space-between" class="mx-0 mt-n1 mb-2">
             <div style="font-size: 22px; font-weight: 500; color: #343a40">
-              <v-icon color="grey800" size="30" class="mx-n2 mt-n1">mdi-power-on</v-icon>{{currentPage.title}}
+              <v-icon color="grey800" size="30" class="mx-n2 mt-n1">mdi-power-on</v-icon>
+              {{currentPage.title}}
             </div>
           </v-row>
         </template>
@@ -191,15 +196,11 @@
             </v-col>
           </v-row>
           <v-row class="mx-0 mt-4" justify="end">
-            <v-btn class="mr-3" color="secondary" ref="download">
-              <a
-                :href="fileSpecific.s3Link"
-                :download="fileSpecific.s3Link"
-                style="color: #ffffff"
-              >Download</a>
+            <v-btn class="mr-3" color="secondary">
+              <a @click.prevent="DownloadFile(fileSpecific.fid)" style="color: #ffffff">Download</a>
             </v-btn>
             <v-btn color="primary" class="mr-4">
-              <div>Share</div>
+              <a style="color: #ffffff">Share</a>
             </v-btn>
           </v-row>
           <div style="height: 15px"></div>
@@ -240,6 +241,10 @@ export default {
       type: Object,
       default: null,
     },
+    loadingData: {
+      type: Boolean,
+      default: true,
+    },
   },
   components: {},
   data() {
@@ -270,9 +275,6 @@ export default {
         path: '',
       },
     };
-  },
-  created() {
-
   },
   methods: {
     refreshData() {
@@ -314,14 +316,12 @@ export default {
       this.uploadProgress = true;
       console.log(files);
       const formData = new FormData();
-      const now = moment().format('YYYY-MM-DD HH:mm');
       for (let i = 0; i < files.length; i += 1) {
         formData.append('file', files[i]);
         formData.append('name', files[i].name);
         formData.append('author', 'Tester');
         formData.append('path', this.storagePath);
         formData.append('isFile', true);
-        formData.append('createdDate', now);
         formData.append('fileSize', files[i].size);
       }
       console.log(formData);
@@ -377,7 +377,26 @@ export default {
         this.onClickFolder(data.name);
       }
     },
-
+    // 파일 다운로드
+    DownloadFile(fileId) {
+      this.$axios
+        .get('/fileDownload/', {
+          params: {
+            fid: fileId,
+          },
+        })
+        .then((r) => {
+          const link = document.createElement('a');
+          link.href = r.data.download_url;
+          link.download = r.data.download_url;
+          link.click();
+          // window.location.assign(r.data.download_url);
+          console.log(r.data.download_url);
+        })
+        .catch((e) => {
+          console.log(e.message);
+        });
+    },
     // 파일 삭제
     deleteFile(data) {
       console.log(data);
@@ -394,6 +413,7 @@ export default {
         console.log(2);
       }
     },
+    // 파일 포맷에 맞는 아이콘 설정
     checkFileFormat(format) {
       const fileFormat = format.slice(format.indexOf('.') + 1);
       if (
@@ -429,6 +449,7 @@ export default {
       }
       return 'file';
     },
+    // 파일 사이즈 단위 변경
     getfileSize(x) {
       if (x === 0) {
         return '';

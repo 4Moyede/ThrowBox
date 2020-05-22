@@ -1,12 +1,9 @@
 <template>
   <div>
-    <v-overlay v-model="dataLoading">
-      <v-progress-circular :size="120" width="10" color="primary" indeterminate></v-progress-circular>
-      <div style="color: #ffffff; font-size: 18px; margin-top: 10px">Loading Files...</div>
-    </v-overlay>
     <data-table
       :search="search"
       :loadedFiles="getFiles"
+      :loadingData="dataLoading"
       :userData="userInfo"
       :currentPage="StoragePage"
       @loadFiles="requestFiles"
@@ -15,6 +12,7 @@
 </template>
 
 <script>
+import moment from 'moment';
 import DataTable from '../components/DataTable.vue';
 
 export default {
@@ -68,16 +66,22 @@ export default {
         });
     },
     requestFiles(param) {
+      this.dataLoading = true;
       if (param !== undefined) { this.params = param; }
       this.$axios
         .get('/fileList/', { params: this.params })
         .then((r) => {
           this.getFiles = r.data;
           this.dataLoading = false;
+
           for (let i = 0; i < this.getFiles.length; i += 1) {
             if (!this.getFiles[i].isFile) {
               this.getFiles[i].name = ` ${this.getFiles[i].name}`;
             }
+            // fid to Date
+            const convertDate = moment(parseInt(this.getFiles[i].fid.substring(0, 8), 16) * 1000).format('YYYY-MM-DD hh:MM');
+            this.getFiles[i].createdDate = convertDate;
+
             // Favorite 초기
             // for (let j = 0; j < this.getFiles[i].favorite.length; j += 1) {
             //   const favAuthor = this.getFiles[i].favorite[j];

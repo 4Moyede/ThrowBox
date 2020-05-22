@@ -1,11 +1,8 @@
 <template>
   <div>
-    <v-overlay v-model="dataLoading">
-      <v-progress-circular :size="120" width="10" color="primary" indeterminate></v-progress-circular>
-      <div style="color: #ffffff; font-size: 18px; margin-top: 10px">Loading Files...</div>
-    </v-overlay>
     <data-table
       :search="search"
+      :loadingData="dataLoading"
       :loadedFiles="getFiles"
       :userData="userInfo"
       :currentPage="StoragePage"
