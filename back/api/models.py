@@ -3,10 +3,10 @@ from djongo import models
 
 class File(models.Model):
     isFile = models.BooleanField()
+    fid = models.ObjectIdField(db_column='_id', primary_key=True)
     author = models.CharField(max_length=256)
     name = models.CharField(max_length=256)
     path = models.TextField()
-    s3Link = models.TextField(null=True)
     fileSize = models.IntegerField()
-    createdDate = models.TextField()
-    deletedDate = models.DateField(default=None, null=True)
+    createdDate = models.CharField(max_length=20)
+    deletedDate = models.CharField(max_length=20, null=True)
