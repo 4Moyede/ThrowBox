@@ -8,6 +8,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
+import boto3
 from boto3.session import Session
 from src.settings import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, AWS_REGION
 
@@ -52,9 +53,9 @@ class FileUpload(APIView):
             if serializer.is_valid():
                 serializer.save()
 
-                # session = boto3.session.Session(aws_access_key_id = AWS_ACCESS_KEY_ID, aws_secret_access_key = AWS_SECRET_ACCESS_KEY, region_name = AWS_REGION)
-                # s3 = session.resource('s3')
-                # s3.Bucket(AWS_STORAGE_BUCKET_NAME).put_object(Key = File.objects.get(name=file.name).pk, Body = file)
+                session = boto3.session.Session(aws_access_key_id = AWS_ACCESS_KEY_ID, aws_secret_access_key = AWS_SECRET_ACCESS_KEY, region_name = AWS_REGION)
+                s3 = session.resource('s3')
+                s3.Bucket(AWS_STORAGE_BUCKET_NAME).put_object(Key = str(File.objects.get(name=file.name).pk), Body = file)
 
                 uploadedList.append(serializer.data)
             else:
