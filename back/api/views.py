@@ -1,3 +1,4 @@
+import boto3
 from django.http import HttpResponse
 from django.core import serializers
 
@@ -46,21 +47,17 @@ class FileUpload(APIView):
             uploadedFile['isFile'] = request.data.getlist('isFile')[idx]
             uploadedFile['author'] = request.data.getlist('author')[idx]
             uploadedFile['fileSize'] = request.data.getlist('fileSize')[idx]
-            uploadedFile['createdDate'] = request.data.getlist('createdDate')[idx]
-
+            uploadedFile['createdDate'] = '2000-01-01 00:00'
             serializer = FileSerializer(data=uploadedFile)
             if serializer.is_valid():
                 serializer.save()
-
-                # session = boto3.session.Session(aws_access_key_id = AWS_ACCESS_KEY_ID, aws_secret_access_key = AWS_SECRET_ACCESS_KEY, region_name = AWS_REGION)
-                # s3 = session.resource('s3')
-                # s3.Bucket(AWS_STORAGE_BUCKET_NAME).put_object(Key = File.objects.get(name=file.name).pk, Body = file)
-
+                session = boto3.session.Session(aws_access_key_id = AWS_ACCESS_KEY_ID, aws_secret_access_key = AWS_SECRET_ACCESS_KEY, region_name = AWS_REGION)
+                s3 = session.resource('s3')
+                s3.Bucket(AWS_STORAGE_BUCKET_NAME).put_object(Key = str(File.objects.get(name=file.name).pk), Body = file)
                 uploadedList.append(serializer.data)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         return Response(uploadedList, status=status.HTTP_201_CREATED)
-
 
 class FolderUpload(APIView):
     def post(self, request, format=None):
@@ -76,3 +73,22 @@ class FileDownload(APIView):
         download_url = "https://throwbox.s3.ap-northeast-2.amazonaws.com/" + request.GET.get('fid', None)
         res = { 'download_url': download_url }
         return Response(res)
+        
+        
+class FileErase(APIView) :
+    def delete(self, request, path='/', format=None) :
+        file_key = str(File.objects.get(name=file.name).pk)
+
+        s3 = boto3.client('s3', aws_access_key_id = AWS_ACCESS_KEY_ID, aws_secret_access_key = AWS_SECRET_ACCESS_KEY)
+        s3.delete_object(Bucket = AWS_STORAGE_BUCKET_NAME, Key = file_key)
+
+        quaryset = File.objects.filter(fid=file_key)
+        result = quaryset.delete()
+        return Response(result, status=status.HTTP_200_OK)
+
+class FileStarred(APIView) :
+    def get(self, request, format=None):
+        starred = request.GET.get('starred', None)
+        queryset = File.objects.filter(starred = True)
+        serializer = FileSerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

@@ -8,5 +8,6 @@ class File(models.Model):
     name = models.CharField(max_length=256)
     path = models.TextField()
     fileSize = models.IntegerField()
+    starred = models.BooleanField(default = False)
     createdDate = models.CharField(max_length=20)
     deletedDate = models.CharField(max_length=20, null=True)
