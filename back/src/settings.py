@@ -78,23 +78,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'src.wsgi.application'
 
 
-# Database
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'djongo',
-        'ENFORCE_SCHEMA': False,
-        'NAME': 'throwBox',
-        'CLIENT': {
-            'host': 'mongodb://ec2-18-212-42-210.compute-1.amazonaws.com',
-            'port': 27017,
-            'username': 'admin',
-            'password': 'admin',
-            'authSource': 'admin',
-            'authMechanism': 'SCRAM-SHA-1',
-        },
-    }    
-} 
 
 
 # Password validation
@@ -191,3 +174,33 @@ DEFAULT_FILE_STORAGE = 'src.storages.MediaStorage'
 STATICFILES_STORAGE = 'src.storages.StaticStorage'
 MEDIAFILES_LOCATION = 'media'
 STATICFILES_LOCATION = 'static'
+
+
+#database
+
+DATABASE_SETTINGS_FILE = os.path.join(os.path.join(ROOT_DIR, '.database_key'), 'db_settings.json')
+db_info = json.loads(open(DATABASE_SETTINGS_FILE).read())
+db_dbName = db_info['client']['db']
+db_host = db_info['client']['host']
+db_username=db_info['client']['username']
+db_port=db_info['client']['port']
+db_pwd=db_info['client']['password']
+db_authSource=db_info['client']['authSource']
+db_authMechanism=db_info['client']['authMechanism']
+
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'djongo',
+        'ENFORCE_SCHEMA': False,
+        'NAME':db_dbName ,
+        'CLIENT': {
+            'host': db_host,
+            'port': db_port,
+            'username': db_username,
+            'password': db_pwd,
+            'authSource': db_authSource,
+            'authMechanism': db_authMechanism,
+        },
+    }    
+} 

@@ -11,7 +11,7 @@ from rest_framework.response import Response
 import boto3
 from boto3.session import Session
 from src.settings import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, AWS_REGION
-
+from bson import ObjectId
 
 class FileList(APIView):
     def get(self, request, format=None):
@@ -77,3 +77,10 @@ class FileDownload(APIView):
         download_url = "https://throwbox.s3.ap-northeast-2.amazonaws.com/" + request.GET.get('fid', None)
         res = { 'download_url': download_url }
         return Response(res)
+class fileTrash(APIView):
+    #즐겨찾기 삭제 추가할 것.
+    def post(self,request,format=None):#리퀘 데이터에 삭제 시간,id
+        print(type(request.data))
+        print(request.data['file_id'],request.data['deletedDate'])
+        File.objects.filter(fid= ObjectId(request.data['file_id'])).update(deletedDate=request.data['deletedDate'])
+        return Response(status=status.HTTP_200_OK)
