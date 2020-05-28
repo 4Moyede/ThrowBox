@@ -74,6 +74,15 @@ class FolderUpload(APIView):
 
 class FileDownload(APIView):
     def get(self, request, format=None):
-        download_url = "https://throwbox.s3.ap-northeast-2.amazonaws.com/" + request.GET.get('fid', None)
-        res = { 'download_url': download_url }
-        return Response(res)
+        try:
+            request_fid = request.GET.get('fid', None)
+            target = File.objects.get(pk=request_fid)
+            download_url = "https://throwbox.s3.ap-northeast-2.amazonaws.com/" + request_fid
+            res = { 
+                'download_url': download_url,
+                'file_name': target.name
+            }
+            return Response(res, status=status.HTTP_200_OK)
+        except File.DoesNotExist:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
