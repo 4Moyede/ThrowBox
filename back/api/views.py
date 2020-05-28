@@ -16,24 +16,25 @@ from src.settings import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_STORAGE_B
 class FileList(APIView):
     def get(self, request, format=None):
         path = request.GET.get('path', None)
-        queryset = File.objects.filter(path=path, deleteDate=None)
+        queryset = File.objects.filter(path=path, deletedDate=None)
         serializer = FileSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class FileUpload(APIView):
-    def checkDuplicate(self, idx, name, path):
+    def checkDuplicate(self, name, path):
+        idx = 1
+        dot = name.rfind('.')
+        file_name = name[:dot]
+        file_ext = name[dot:]
+
         queryset = File.objects.filter(name=name, path=path)
-        if queryset.values_list():
-            dot = name.rfind('.')
-            new_name = ""
-            if idx is 1:
-                new_name = name[:dot] + " (" + str(idx) + ")" + name[dot:]
-            else:
-                new_name = name[:dot-4] + " (" + str(idx) + ")" + name[dot:]
-            return self.checkDuplicate(idx+1, new_name, path)
-        else:
-            return name
+        while queryset.values_list(): 
+            name = file_name + " (" + str(idx) + ")" + file_ext
+            idx += 1
+            queryset = File.objects.filter(name=name, path=path)
+        
+        return name
 
     def post(self, request, format=None):
         uploadedList = []
@@ -41,7 +42,7 @@ class FileUpload(APIView):
         for idx, file in enumerate(request.FILES.getlist('file')):
             uploadedFile = {}
             file_path = request.data.getlist('path')[idx]
-            file.name = self.checkDuplicate(1, file.name, file_path)
+            file.name = self.checkDuplicate(file.name, file_path)
             uploadedFile['name'] = file.name
             uploadedFile['path'] = file_path
             uploadedFile['isFile'] = request.data.getlist('isFile')[idx]
@@ -56,7 +57,7 @@ class FileUpload(APIView):
                 session = boto3.session.Session(aws_access_key_id = AWS_ACCESS_KEY_ID, aws_secret_access_key = AWS_SECRET_ACCESS_KEY, region_name = AWS_REGION)
                 s3 = session.resource('s3')
                 s3.Bucket(AWS_STORAGE_BUCKET_NAME).put_object(Key = str(File.objects.get(name=file.name).pk), Body = file)
-
+                
                 uploadedList.append(serializer.data)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
