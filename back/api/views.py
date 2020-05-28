@@ -16,7 +16,7 @@ from src.settings import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_STORAGE_B
 class FileList(APIView):
     def get(self, request, format=None):
         path = request.GET.get('path', None)
-        queryset = File.objects.filter(path=path)
+        queryset = File.objects.filter(path=path, deleteDate=None)
         serializer = FileSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
