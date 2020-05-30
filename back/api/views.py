@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from boto3.session import Session
 from src.settings import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, AWS_REGION
 
+from datetime import datetime
 
 class FileList(APIView):
     def get(self, request, format=None):
@@ -76,19 +77,26 @@ class FileDownload(APIView):
         
         
 class FileErase(APIView) :
-    def delete(self, request, path='/', format=None) :
-        file_key = str(File.objects.get(name=file.name).pk)
+    def delete() :
+        quaryset = File.objects.filter(deletedDate < datetime.now() - 30)    # 날짜체크 수정해야함
 
-        s3 = boto3.client('s3', aws_access_key_id = AWS_ACCESS_KEY_ID, aws_secret_access_key = AWS_SECRET_ACCESS_KEY)
-        s3.delete_object(Bucket = AWS_STORAGE_BUCKET_NAME, Key = file_key)
+        s3 = boto3.client('s3', aws_access_key_id = AWS_ACCESS_KEY_ID, aws_secret_access_key = AWS_SECRET_ACCESS_KEY,)
+        s3.delete_object(Bucket = AWS_STORAGE_BUCKET_NAME, Key = file_key)  # s3에서 삭제, 여러파일 동시에 삭제하도록 수정해야함
 
-        quaryset = File.objects.filter(fid=file_key)
-        result = quaryset.delete()
-        return Response(result, status=status.HTTP_200_OK)
+        quaryset.delete()   # DB에서 삭제, deletedDate부터 30일 지난 날짜 체크
+        
 
 class FileStarred(APIView) :
-    def get(self, request, format=None):
+    def get(self, request, format = None):
         starred = request.GET.get('starred', None)
         queryset = File.objects.filter(starred = True)
-        serializer = FileSerializer(queryset, many=True)
+        serializer = FileSerializer(queryset, many = True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+   
+    def post(self, request, format = None) :
+        queryset = File.objects.filter(fid = ObjectId(request.data['fid']))
+        res = queryset.update(starred = request.data['starred'])
+        if res > 0 :
+            return Response(status = status.HTTP_200_OK)
+        return Response(status = status.HTTP_400_BAD_REQUEST)
+    
