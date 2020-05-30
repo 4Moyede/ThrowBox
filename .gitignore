@@ -1,5 +1,6 @@
 .DS_Store
 .aws_key
+.database_key
 node_modules
 /dist
 #vscode

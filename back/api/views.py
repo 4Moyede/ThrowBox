@@ -9,10 +9,15 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
+import boto3
 from boto3.session import Session
 from src.settings import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, AWS_REGION
+<<<<<<< HEAD
 
 from datetime import datetime
+=======
+from bson import ObjectId
+>>>>>>> origin/django_fileTrash
 
 class FileList(APIView):
     def get(self, request, format=None):
@@ -52,9 +57,17 @@ class FileUpload(APIView):
             serializer = FileSerializer(data=uploadedFile)
             if serializer.is_valid():
                 serializer.save()
+<<<<<<< HEAD
                 session = boto3.session.Session(aws_access_key_id = AWS_ACCESS_KEY_ID, aws_secret_access_key = AWS_SECRET_ACCESS_KEY, region_name = AWS_REGION)
                 s3 = session.resource('s3')
                 s3.Bucket(AWS_STORAGE_BUCKET_NAME).put_object(Key = str(File.objects.get(name=file.name).pk), Body = file)
+=======
+
+                session = boto3.session.Session(aws_access_key_id = AWS_ACCESS_KEY_ID, aws_secret_access_key = AWS_SECRET_ACCESS_KEY, region_name = AWS_REGION)
+                s3 = session.resource('s3')
+                s3.Bucket(AWS_STORAGE_BUCKET_NAME).put_object(Key = str(File.objects.get(name=file.name).pk), Body = file)
+
+>>>>>>> origin/django_fileTrash
                 uploadedList.append(serializer.data)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -100,3 +113,10 @@ class FileStarred(APIView) :
             return Response(status = status.HTTP_200_OK)
         return Response(status = status.HTTP_400_BAD_REQUEST)
     
+class fileTrash(APIView):
+    #즐겨찾기 삭제 추가할 것.
+    def post(self,request,format=None):#리퀘 데이터에 삭제 시간,id
+        print(type(request.data))
+        print(request.data['file_id'],request.data['deletedDate'])
+        File.objects.filter(fid= ObjectId(request.data['file_id'])).update(deletedDate=request.data['deletedDate'])
+        return Response(status=status.HTTP_200_OK)
