@@ -12,12 +12,9 @@ from rest_framework.response import Response
 import boto3
 from boto3.session import Session
 from src.settings import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, AWS_REGION
-<<<<<<< HEAD
 
 from datetime import datetime
-=======
 from bson import ObjectId
->>>>>>> origin/django_fileTrash
 
 class FileList(APIView):
     def get(self, request, format=None):
@@ -57,17 +54,9 @@ class FileUpload(APIView):
             serializer = FileSerializer(data=uploadedFile)
             if serializer.is_valid():
                 serializer.save()
-<<<<<<< HEAD
                 session = boto3.session.Session(aws_access_key_id = AWS_ACCESS_KEY_ID, aws_secret_access_key = AWS_SECRET_ACCESS_KEY, region_name = AWS_REGION)
                 s3 = session.resource('s3')
                 s3.Bucket(AWS_STORAGE_BUCKET_NAME).put_object(Key = str(File.objects.get(name=file.name).pk), Body = file)
-=======
-
-                session = boto3.session.Session(aws_access_key_id = AWS_ACCESS_KEY_ID, aws_secret_access_key = AWS_SECRET_ACCESS_KEY, region_name = AWS_REGION)
-                s3 = session.resource('s3')
-                s3.Bucket(AWS_STORAGE_BUCKET_NAME).put_object(Key = str(File.objects.get(name=file.name).pk), Body = file)
-
->>>>>>> origin/django_fileTrash
                 uploadedList.append(serializer.data)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
