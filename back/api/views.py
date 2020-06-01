@@ -18,6 +18,8 @@ class FileList(APIView):
         path = request.GET.get('path', None)
         queryset = File.objects.filter(path=path, deletedDate=None)
         serializer = FileSerializer(queryset, many=True)
+        # serializer까지는 속도가 빠른데, 
+        # Response 보낼 때, 속도가 많이 느립니다. 혹시 원인을 알 수 있을까요?
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -48,7 +50,6 @@ class FileUpload(APIView):
             uploadedFile['isFile'] = request.data.getlist('isFile')[idx]
             uploadedFile['author'] = request.data.getlist('author')[idx]
             uploadedFile['fileSize'] = request.data.getlist('fileSize')[idx]
-            uploadedFile['createdDate'] = request.data.getlist('createdDate')[idx]
 
             serializer = FileSerializer(data=uploadedFile)
             if serializer.is_valid():

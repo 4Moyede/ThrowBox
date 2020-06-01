@@ -18,6 +18,7 @@ export default new Vuex.Store({
       expiryDtime: localStorage.getItem('expiryDtime'),
       userName: localStorage.getItem('userName'),
       profileIMG: localStorage.getItem('profileIMG'),
+      rootPath: localStorage.getItem('rootPath'),
     },
   },
   mutations: {
@@ -27,6 +28,7 @@ export default new Vuex.Store({
       state.userInfo.expiryDtime = localStorage.getItem('expiryDtime');
       state.userInfo.userName = localStorage.getItem('userName');
       state.userInfo.profileIMG = localStorage.getItem('profileIMG');
+      state.userInfo.rootPath = localStorage.getItem('rootPath');
     },
     delToken(state) {
       localStorage.removeItem('accessToken');
@@ -34,11 +36,13 @@ export default new Vuex.Store({
       localStorage.removeItem('expiryDtime');
       localStorage.removeItem('userName');
       localStorage.removeItem('profileIMG');
+      localStorage.removeItem('rootPath');
       state.userInfo.accessToken = null;
       state.userInfo.refreshToken = null;
       state.userInfo.expiryDtime = null;
       state.userInfo.userName = null;
       state.userInfo.profileIMG = null;
+      state.userInfo.rootPath = null;
       window.location.replace('/signin');
     },
   },
@@ -48,6 +52,7 @@ export default new Vuex.Store({
     getExpiryDtime: (state) => state.userInfo.expiryDtime,
     getUserName: (state) => state.userInfo.userName,
     getProfileIMG: (state) => state.userInfo.profileIMG,
+    getRootPath: (state) => state.userInfo.rootPath,
   },
   actions: {
     commitGetToken: (context) => context.commit('getToken'),

@@ -6,6 +6,8 @@
       :loadingData="dataLoading"
       :userData="userInfo"
       :currentPage="StoragePage"
+      :tableParams="params"
+      :tableHeaders="headers"
       @loadFiles="requestFiles"
     />
   </div>
@@ -33,7 +35,7 @@ export default {
       getFiles: [],
       dataLoading: true,
       params: {
-        path: 'root',
+        path: '',
         search: '',
       },
       StoragePage: {
@@ -41,6 +43,12 @@ export default {
         sort: 'name',
         title: 'Storage',
       },
+      headers: [
+        { text: 'Name', value: 'name', align: 'start' },
+        { text: 'Created', value: 'createDate', align: 'end' },
+        { text: 'Size', value: 'fileSize', align: 'end' },
+        { value: 'action', align: 'center', sortable: false },
+      ],
     };
   },
   // watch: {
@@ -49,9 +57,11 @@ export default {
   //     console.log(oldValue);
   //   },
   // },
-  async created() {
+  created() {
     // await this.loadUserInfo();
-    await this.requestFiles();
+    // 회원관리 api 완성 시 vuex에 저장된 rootPath.
+    this.params.path = '5ecf4c35cbf89502da2cab57';
+    this.requestFiles();
   },
   methods: {
     // 데이터 로드
@@ -65,9 +75,8 @@ export default {
           console.log(e);
         });
     },
-    requestFiles(param) {
+    requestFiles() {
       this.dataLoading = true;
-      if (param !== undefined) { this.params = param; }
       this.$axios
         .get('/fileList/', { params: this.params })
         .then((r) => {

@@ -6,12 +6,14 @@
       :loadingData="dataLoading"
       :userData="userInfo"
       :currentPage="StoragePage"
+      :tableHeaders="headers"
       @loadFiles="requestFiles"
     />
   </div>
 </template>
 
 <script>
+import moment from 'moment';
 import DataTable from '../components/DataTable.vue';
 
 export default {
@@ -32,19 +34,31 @@ export default {
       getFiles: [],
       dataLoading: true,
       params: {
-        path: 'root',
+        path: '',
         search: '',
       },
       StoragePage: {
         isRecent: true,
-        sort: 'created',
+        sort: 'createDate',
         title: 'Recent Files',
       },
+      headers: [
+        {
+          text: 'Name', value: 'name', align: 'start', sortable: false,
+        },
+        {
+          text: 'Created', value: 'createDate', align: 'end', sortable: false,
+        },
+        {
+          text: 'Size', value: 'fileSize', align: 'end', sortable: false,
+        },
+        { value: 'action', align: 'center', sortable: false },
+      ],
     };
   },
-  async created() {
-    // await this.loadUserInfo();
-    await this.requestFiles();
+  created() {
+    // this.loadUserInfo();
+    this.requestFiles();
   },
   methods: {
     // 데이터 로드
@@ -69,6 +83,9 @@ export default {
             if (!this.getFiles[i].isFile) {
               this.getFiles.splice(i, 1);
             }
+            // fid to Date
+            const convertDate = moment(parseInt(this.getFiles[i].fid.substring(0, 8), 16) * 1000).format('YYYY-MM-DD hh:MM');
+            this.getFiles[i].createdDate = convertDate;
             // Favorite 초기
             // for (let j = 0; j < this.getFiles[i].favorite.length; j += 1) {
             //   const favAuthor = this.getFiles[i].favorite[j];

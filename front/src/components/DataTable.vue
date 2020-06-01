@@ -1,9 +1,14 @@
 <template>
   <v-sheet style="margin-top: 70px">
+
+    <!-- Loading Progress -->
     <v-overlay v-model="loadingData">
       <v-progress-circular :size="120" width="10" color="primary" indeterminate></v-progress-circular>
       <div style="color: #ffffff; font-size: 18px; margin-top: 10px">Loading Files...</div>
     </v-overlay>
+    <!--  -->
+
+    <!-- Add folder Dialog -->
     <v-dialog v-model="addFolderDialog" max-width="400">
       <v-card max-width="400" elevation="0" class="pa-4">
         <v-row justify="space-between" class="mx-0">
@@ -25,10 +30,16 @@
         </v-row>
       </v-card>
     </v-dialog>
+    <!--  -->
+
+    <!-- Upload Progress -->
     <v-overlay v-model="uploadProgress">
       <v-progress-circular :size="120" width="10" color="primary" indeterminate></v-progress-circular>
       <div style="color: #ffffff; font-size: 18px; margin-top: 10px">Uploading File...</div>
     </v-overlay>
+    <!--  -->
+
+    <!-- Data Table -->
     <v-card
       elevation="0"
       class="pa-5"
@@ -45,9 +56,8 @@
         item-key="name"
         :sort-by="currentPage.sort"
         :sort-desc="currentPage.isRecent"
-        :disable-sort="currentPage.isRecent"
       >
-        <!-- Header and Top Setting -->
+        <!-- Top Setting -->
         <template v-slot:top>
           <v-row justify="space-between" class="mx-0 mt-n1 mb-2">
             <div style="font-size: 22px; font-weight: 500; color: #343a40">
@@ -56,6 +66,9 @@
             </div>
           </v-row>
         </template>
+        <!--  -->
+
+        <!-- Header Setting -->
         <template v-if="currentPage.title==='Storage'" v-slot:header="{ props: { headers } }">
           <thead>
             <tr>
@@ -65,7 +78,7 @@
                     <div v-for="(path, i) in pathArray" :key="i">
                       <v-row class="mx-0" v-if="i < pathArray.length-1">
                         <v-btn text class="pathBtnStyle" @click="moveSubFolderPath(path)">
-                          <div>{{path}}</div>
+                          <div>{{path.name}}</div>
                         </v-btn>
                         <v-icon>mdi-menu-right</v-icon>
                       </v-row>
@@ -77,7 +90,7 @@
                         elevation="0"
                         color="primary"
                       >
-                        <div>{{path}}</div>
+                        <div>{{path.name}}</div>
                       </v-btn>
                     </div>
                   </v-row>
@@ -89,6 +102,7 @@
             </tr>
           </thead>
         </template>
+        <!--  -->
 
         <!-- Table Body Setting -->
         <template v-slot:body="{ items }">
@@ -117,13 +131,13 @@
                 <div class="createdDateStyle" style="text-align: end">{{item.createdDate}}</div>
               </td>
               <td>
-                <div class="fileSizeStyle" style="text-align: end">{{getfileSize(item.fileSize)}}</div>
+                <div class="fileSizeStyle" style="text-align: end">{{getfileSize}}</div>
               </td>
-              <td>
+              <td v-if="currentPage.title !== 'Recycle bin'">
                 <div style="text-align: start">
                   <!-- <v-btn @click="clickStar(item)" class="ml-n7" icon color="primary">
-              <v-icon>mdi-star</v-icon>
-                  </v-btn>-->
+                    <v-icon>mdi-star</v-icon>
+                  </v-btn> -->
                   <v-menu transition="slide-y-transition" bottom>
                     <template v-slot:activator="{ on }">
                       <v-btn icon class="ml-n6" v-on="on">
@@ -144,8 +158,11 @@
             </tr>
           </tbody>
         </template>
+        <!--  -->
       </v-data-table>
       <v-divider />
+
+      <!-- File Specific -->
       <v-dialog v-model="fileSpecificDialog" max-width="500">
         <v-card elevation="0" outlined max-width="500">
           <v-row class="mx-3 mt-3 mb-1" justify="space-between">
@@ -184,7 +201,7 @@
               <div class="dialogSubtitle">Path</div>
             </v-col>
             <v-col cols="8">
-              <div class="dialogContents">{{convertPath(storagePath)}}</div>
+              <div class="dialogContents">{{convertPath}}</div>
             </v-col>
           </v-row>
           <v-row class="mt-n1 mx-0">
@@ -192,40 +209,46 @@
               <div class="dialogSubtitle">Size</div>
             </v-col>
             <v-col cols="8">
-              <div class="dialogContents">{{getfileSize(fileSpecific.fileSize)}}</div>
+              <div class="dialogContents">{{getfileSize}}</div>
             </v-col>
           </v-row>
-          <v-row class="mx-0 mt-4" justify="end">
+          <v-row class="mx-0 mt-4" justify="end" v-if="currentPage.title !== 'Recycle bin'">
             <v-btn class="mr-3" color="secondary">
-              <a @click.prevent="DownloadFile(fileSpecific.fid)" style="color: #ffffff">Download</a>
+              <a @click.prevent="downloadFile(fileSpecific.fid)" style="color: #ffffff">Download</a>
             </v-btn>
             <v-btn color="primary" class="mr-4">
               <a style="color: #ffffff">Share</a>
             </v-btn>
           </v-row>
+          <v-row class="mx-0 mt-4" justify="end" v-else>
+            <v-btn class="mr-4" color="secondary">
+              <a @click.prevent="recoverFile(fileSpecific.fid)" style="color: #ffffff">Recover</a>
+            </v-btn>
+          </v-row>
           <div style="height: 15px"></div>
         </v-card>
       </v-dialog>
+      <!--  -->
+
+      <!-- Upload Button  -->
       <v-layout justify-center class="mt-8" v-if="currentPage.title==='Storage'">
         <v-btn color="primary" @click="clickUploadButton">Click or Drag & Drop</v-btn>
         <input ref="fileInput" style="display: none" type="file" @change="onFileChange" />
       </v-layout>
+      <!--  -->
+
     </v-card>
   </v-sheet>
 </template>
 
 <script>
+/* eslint-disable no-underscore-dangle */
 // @ is an alias to /src
-import moment from 'moment';
 
 export default {
   name: 'DataTable',
   props: {
     search: {
-      type: String,
-      default: '',
-    },
-    navID: {
       type: String,
       default: '',
     },
@@ -245,63 +268,86 @@ export default {
       type: Boolean,
       default: true,
     },
+    tableParams: {
+      type: Object,
+      default: null,
+    },
+    tableHeaders: {
+      type: Array,
+      default: null,
+    },
   },
   components: {},
   data() {
     return {
       folderName: '',
-      storagePath: 'root',
-      pathArray: ['root'],
+      pathArray: [],
       userInfo: {
         id: '',
         email: '',
       },
       uploadForm: [],
-      tableHeaders: [
-        { text: 'Name', value: 'name', align: 'start' },
-        { text: 'Created', value: 'createDate', align: 'end' },
-        { text: 'Size', value: 'fileSize', align: 'end' },
-        { value: 'action', align: 'center', sortable: false },
-      ],
       fileSpecific: {},
       // dialog
       addFolderDialog: false,
       fileSpecificDialog: false,
       uploadProgress: false,
+      actionNotify: false,
 
       // pagination & params
-      params: {
-        search: '',
-        path: '',
-      },
     };
   },
+  // 초기 path ui를 구성하기 위한 작업.
+  created() {
+    if (this.currentPage.title === 'Storage') {
+      this.pathArray.push({ name: 'root', path: this.tableParams.path });
+    }
+    console.log(this.pathArray);
+  },
+  computed: {
+    // path
+    convertPath() {
+      let path = '/';
+      this.pathArray.forEach((element) => {
+        path += `${element.name}/`;
+      });
+      return path;
+    },
+    // file size
+    getfileSize() {
+      if (this.fileSpecific.fileSize === 0) {
+        return '';
+      }
+      const s = ['bytes', 'kB', 'MB', 'GB', 'TB', 'PB'];
+      const e = Math.floor(Math.log(this.fileSpecific.fileSize) / Math.log(1024));
+      return `${(this.fileSpecific.fileSize / 1024 ** e).toFixed(2)} ${s[e]}`;
+    },
+  },
   methods: {
+    // 데이터 호출
     refreshData() {
-      this.params.path = this.storagePath;
-      this.$emit('loadFiles', this.params);
+      this.$emit('loadFiles');
     },
     // 폴더 이동 관련
-    moveSubFolderPath(path) {
-      this.storagePath = '';
+    moveSubFolderPath(data) {
+      this.tableParams.path = data.path;
       for (let i = 0; i < this.pathArray.length; i += 1) {
         const element = this.pathArray[i];
-        this.storagePath += element;
-        if (element === path) {
+        if (element.path === data.path) {
           this.pathArray = this.pathArray.slice(0, i + 1);
           break;
         }
-        this.storagePath += ',';
       }
       this.refreshData();
     },
-    onClickFolder(path) {
-      this.storagePath += `,${path}`;
-      this.pathArray.push(path);
+    // 폴더 클릭 후 path 조정
+    onClickFolder(data) {
+      this.tableParams.path = data.fid;
+      this.pathArray.push({ name: data.name, path: data.fid });
       this.refreshData();
     },
 
-    // 파일 업로드 관련
+    // 파일 업로드 관련 drag & drop
     onDrop(event) {
       this.uploadFile(event.dataTransfer.files);
     },
@@ -320,7 +366,7 @@ export default {
         formData.append('file', files[i]);
         formData.append('name', files[i].name);
         formData.append('author', 'Tester');
-        formData.append('path', this.storagePath);
+        formData.append('path', this.tableParams.path);
         formData.append('isFile', true);
         formData.append('fileSize', files[i].size);
       }
@@ -345,12 +391,10 @@ export default {
       if (this.folderName) {
         this.uploadProgress = true;
         const formData = new FormData();
-        const now = moment().format('YYYY-MM-DD HH:mm');
         formData.append('name', this.folderName);
         formData.append('author', 'Tester');
-        formData.append('path', this.storagePath);
+        formData.append('path', this.tableParams.path);
         formData.append('isFile', false);
-        formData.append('createdDate', now);
         formData.append('fileSize', 0);
         this.$axios
           .post('/folderUpload/', formData, {
@@ -374,11 +418,11 @@ export default {
         this.fileSpecific = data;
         this.fileSpecificDialog = true;
       } else {
-        this.onClickFolder(data.name);
+        this.onClickFolder(data);
       }
     },
     // 파일 다운로드
-    DownloadFile(fileId) {
+    downloadFile(fileId) {
       this.$axios
         .get('/fileDownload/', {
           params: {
@@ -399,7 +443,27 @@ export default {
     },
     // 파일 삭제
     deleteFile(data) {
-      console.log(data);
+      this.$axios
+        .get('/fileTrash/', { file_id: data.fid })
+        .then((r) => {
+          this.actionNotify = true;
+          console.log(r);
+        })
+        .catch((e) => {
+          console.log(e.message);
+        });
+    },
+    // 파일 복구
+    recoverFile(fid) {
+      this.$axios
+        .get('/fileTrash/', { file_id: fid })
+        .then((r) => {
+          this.actionNotify = true;
+          console.log(r);
+        })
+        .catch((e) => {
+          console.log(e.message);
+        });
     },
     // 이름 변경
     renameFile(data) {
@@ -448,18 +512,6 @@ export default {
         return 'zip';
       }
       return 'file';
-    },
-    // 파일 사이즈 단위 변경
-    getfileSize(x) {
-      if (x === 0) {
-        return '';
-      }
-      const s = ['bytes', 'kB', 'MB', 'GB', 'TB', 'PB'];
-      const e = Math.floor(Math.log(x) / Math.log(1024));
-      return `${(x / 1024 ** e).toFixed(2)} ${s[e]}`;
-    },
-    convertPath(path) {
-      return path.replace(',', '/');
     },
   },
 };
