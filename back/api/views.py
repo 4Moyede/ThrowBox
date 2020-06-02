@@ -7,21 +7,86 @@ from api.serializers import FileSerializer
 
 from rest_framework import status
 from rest_framework.views import APIView
+from rest_framework.request import Request
 from rest_framework.response import Response
 
 import boto3
 from boto3.session import Session
-from src.settings import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, AWS_REGION
+from src.settings import AWS_REGION
+from src.settings import S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_STORAGE_BUCKET_NAME, S3_ACCESS_URL
+from src.settings import COGNITO_ACCESS_KEY_ID, COGNITO_SECRET_ACCESS_KEY, COGNITO_APP_CLIENT_ID
 
 from datetime import datetime
 from bson import ObjectId
 
+
+class SignUp(APIView):
+    def post(self, request, format=None):
+        session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
+        cognito = session.client("cognito-idp")
+        try:
+            res = cognito.sign_up(
+                ClientId=COGNITO_APP_CLIENT_ID,
+                Username=request.data['username'],
+                Password=request.data['password'],
+                UserAttributes=[{'Name': 'email', 'Value': request.data['email']}]
+            )
+            return Response(status=status.HTTP_201_CREATED)
+        except cognito.exceptions.InvalidPasswordException as e:
+            return Response({ 'error' : str(e) }, status=status.HTTP_400_BAD_REQUEST)
+        except cognito.exceptions.UsernameExistsException as e:
+            return Response({ 'error' : str(e) }, status=status.HTTP_409_CONFLICT)
+
+
+class SignUpConfirm(APIView):
+    def post(self, request, format=None):
+        session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
+        cognito = session.client("cognito-idp")
+        try:
+            res = cognito.confirm_sign_up(
+                ClientId=COGNITO_APP_CLIENT_ID,
+                Username=request.data['username'],
+                ConfirmationCode=request.data['confirmationCode'],
+            )
+            return Response(status=status.HTTP_200_OK)
+        except cognito.exceptions.ExpiredCodeException as e:
+            cognito.resend_confirmation_code(
+                ClientId=COGNITO_APP_CLIENT_ID,
+                Username=request.data['username']
+            )
+            return Response({ 'error' : str(e) }, status=status.HTTP_404_NOT_FOUND)
+        except cognito.exceptions.CodeMismatchException as e:
+            return Response({ 'error' : str(e) }, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SignIn(APIView):
+    def get(self, request, format=None):
+        session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
+        cognito = session.client("cognito-idp")
+        try:
+            response = cognito.initiate_auth(
+                ClientId=COGNITO_APP_CLIENT_ID,
+                AuthFlow='USER_PASSWORD_AUTH',
+                AuthParameters={ 'USERNAME': request.data['username'], 'PASSWORD': request.data['password'] },
+            )
+            header = { 'AccessToken' : response['AuthenticationResult']['AccessToken'] }
+            return Response(header, status=status.HTTP_200_OK)
+        except cognito.exceptions.NotAuthorizedException as e:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
 class FileList(APIView):
     def get(self, request, format=None):
-        path = request.GET.get('path', None)
-        queryset = File.objects.filter(path=path, deletedDate=None)
-        serializer = FileSerializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
+        cognito = session.client("cognito-idp")
+        try:
+            user = cognito.get_user(AccessToken=request.headers['AccessToken'])
+            path = request.GET.get('path', None)
+            queryset = File.objects.filter(path=path, deletedDate=None)
+            serializer = FileSerializer(queryset, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except (KeyError, cognito.exceptions.NotAuthorizedException):
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
 
 
 class FileUpload(APIView):
@@ -40,47 +105,63 @@ class FileUpload(APIView):
         return name
 
     def post(self, request, format=None):
-        uploadedList = []
-        
-        for idx, file in enumerate(request.FILES.getlist('file')):
-            uploadedFile = {}
-            file_path = str(request.data.getlist('path')[idx])
-            file.name = self.checkDuplicate(file.name, file_path)
-            uploadedFile['name'] = file.name
-            uploadedFile['path'] = file_path
-            uploadedFile['isFile'] = request.data.getlist('isFile')[idx]
-            uploadedFile['author'] = request.data.getlist('author')[idx]
-            uploadedFile['fileSize'] = request.data.getlist('fileSize')[idx]
-            uploadedFile['createdDate'] = request.data.getlist('createdDate')[idx]
+        session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
+        cognito = session.client("cognito-idp")
+        try:
+            user = cognito.get_user(AccessToken=request.headers['AccessToken'])
+            uploadedList = []
+            
+            for idx, file in enumerate(request.FILES.getlist('file')):
+                uploadedFile = {}
+                file_path = str(request.data.getlist('path')[idx])
+                file.name = self.checkDuplicate(file.name, file_path)
+                uploadedFile['name'] = file.name
+                uploadedFile['path'] = file_path
+                uploadedFile['isFile'] = request.data.getlist('isFile')[idx]
+                uploadedFile['author'] = request.data.getlist('author')[idx]
+                uploadedFile['fileSize'] = request.data.getlist('fileSize')[idx]
+                uploadedFile['createdDate'] = request.data.getlist('createdDate')[idx]
 
-            serializer = FileSerializer(data=uploadedFile)
-            if serializer.is_valid():
-                serializer.save()
-                
-                session = boto3.session.Session(aws_access_key_id = AWS_ACCESS_KEY_ID, aws_secret_access_key = AWS_SECRET_ACCESS_KEY, region_name = AWS_REGION)
-                s3 = session.resource('s3')
-                s3.Bucket(AWS_STORAGE_BUCKET_NAME).put_object(Key = str(File.objects.get(name=file.name).pk), Body = file)
+                serializer = FileSerializer(data=uploadedFile)
+                if serializer.is_valid():
+                    serializer.save()
+                    
+                    session = boto3.session.Session(aws_access_key_id = S3_ACCESS_KEY_ID, aws_secret_access_key = S3_SECRET_ACCESS_KEY, region_name = AWS_REGION)
+                    s3 = session.resource('s3')
+                    s3.Bucket(S3_STORAGE_BUCKET_NAME).put_object(Key = str(File.objects.get(name=file.name).pk), Body = file)
 
-                uploadedList.append(serializer.data)
-            else:
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        return Response(uploadedList, status=status.HTTP_201_CREATED)
+                    uploadedList.append(serializer.data)
+                else:
+                    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(uploadedList, status=status.HTTP_201_CREATED)
+        except (KeyError, cognito.exceptions.NotAuthorizedException):
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
 
 class FolderUpload(APIView):
     def post(self, request, format=None):
-        serializer = FileSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
+        cognito = session.client("cognito-idp")
+        try:
+            user = cognito.get_user(AccessToken=request.headers['AccessToken'])
+            serializer = FileSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except (KeyError, cognito.exceptions.NotAuthorizedException):
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
         
 
 class FileDownload(APIView):
     def get(self, request, format=None):
+        session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
+        cognito = session.client("cognito-idp")
         try:
+            user = cognito.get_user(AccessToken=request.headers['AccessToken'])
             request_fid = request.GET.get('fid', None)
             target = File.objects.get(pk=request_fid)
-            download_url = "https://throwbox.s3.ap-northeast-2.amazonaws.com/" + request_fid
+            download_url = S3_ACCESS_URL + request_fid
             res = { 
                 'download_url': download_url,
                 'file_name': target.name
@@ -88,6 +169,8 @@ class FileDownload(APIView):
             return Response(res, status=status.HTTP_200_OK)
         except File.DoesNotExist:
             return Response(status=status.HTTP_400_BAD_REQUEST)
+        except (KeyError, cognito.exceptions.NotAuthorizedException):
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
         
         
 class FileErase(APIView):
