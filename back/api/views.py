@@ -44,20 +44,23 @@ class FileUpload(APIView):
         
         for idx, file in enumerate(request.FILES.getlist('file')):
             uploadedFile = {}
-            file_path = request.data.getlist('path')[idx]
+            file_path = str(request.data.getlist('path')[idx])
             file.name = self.checkDuplicate(file.name, file_path)
             uploadedFile['name'] = file.name
             uploadedFile['path'] = file_path
             uploadedFile['isFile'] = request.data.getlist('isFile')[idx]
             uploadedFile['author'] = request.data.getlist('author')[idx]
             uploadedFile['fileSize'] = request.data.getlist('fileSize')[idx]
-            uploadedFile['createdDate'] = '2000-01-01 00:00'
+            uploadedFile['createdDate'] = request.data.getlist('createdDate')[idx]
+
             serializer = FileSerializer(data=uploadedFile)
             if serializer.is_valid():
                 serializer.save()
+                
                 session = boto3.session.Session(aws_access_key_id = AWS_ACCESS_KEY_ID, aws_secret_access_key = AWS_SECRET_ACCESS_KEY, region_name = AWS_REGION)
                 s3 = session.resource('s3')
                 s3.Bucket(AWS_STORAGE_BUCKET_NAME).put_object(Key = str(File.objects.get(name=file.name).pk), Body = file)
+
                 uploadedList.append(serializer.data)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
