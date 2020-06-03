@@ -10,3 +10,4 @@ class File(models.Model):
     fileSize = models.IntegerField()
     createdDate = models.CharField(max_length=20)
     deletedDate = models.CharField(max_length=20, null=True)
+    fav=models.BooleanField(default=False)

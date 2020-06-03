@@ -78,9 +78,20 @@ class FileDownload(APIView):
         res = { 'download_url': download_url }
         return Response(res)
 class fileTrash(APIView):
-    #즐겨찾기 삭제 추가할 것.
-    def post(self,request,format=None):#리퀘 데이터에 삭제 시간,id
-        print(type(request.data))
-        print(request.data['file_id'],request.data['deletedDate'])
-        File.objects.filter(fid= ObjectId(request.data['file_id'])).update(deletedDate=request.data['deletedDate'])
+    #즐겨찾기 삭제 추가할 것. 
+    def post(self,request,format=None):#requset data->fid, deletedDate
+        #.exist() 함수를 사용하면 결과값이 있는지 없는지 확인 할 수 있지만, 결과값이 없더라도 문제가 생길 수 있으므로 일단 try catch 처리
+        try:
+            File.objects.filter(fid= ObjectId(request.data['file_id'])).update(deletedDate=request.data['deletedDate'])
+        except:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_200_OK)
+
+class fileRecovery(APIView):#request data->fid
+    #복구되는 디렉토리가 삭제 될 경우 해당 파일도 삭제 될 것으로 예상
+    def post(self, request, format=None):
+        try:
+            File.objects.filter(fid= ObjectId(request.data['file_id'])).update(deletedDate=None)
+        except:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_200_OK)
