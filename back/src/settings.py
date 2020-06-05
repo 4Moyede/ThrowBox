@@ -152,7 +152,6 @@ CORS_ALLOW_HEADERS = (
 )
 
 
-
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT_DIR = os.path.dirname(BASE_DIR)
 STATIC_DIR = os.path.join(ROOT_DIR, 'front')
@@ -160,24 +159,31 @@ STATICFILES_DIRS = [
     STATIC_DIR,
 ]
 
-# AWS Access
+
+# AWS setting file
+AWS_REGION = 'ap-northeast-2'
 AWS_SETTINGS_FILE = os.path.join(os.path.join(ROOT_DIR, '.aws_key'), 'aws_settings.json')
 aws_secret = json.loads(open(AWS_SETTINGS_FILE).read())
-AWS_ACCESS_KEY_ID = aws_secret['aws']['access_key_id']
-AWS_SECRET_ACCESS_KEY = aws_secret['aws']['secret_access_key']
-AWS_STORAGE_BUCKET_NAME = aws_secret['aws']['s3_bucket_name']
-
-AWS_REGION = 'ap-northeast-2'
 
 # S3 Storage
+S3_ACCESS_KEY_ID = aws_secret['s3']['access_key_id']
+S3_SECRET_ACCESS_KEY = aws_secret['s3']['secret_access_key']
+S3_STORAGE_BUCKET_NAME = aws_secret['s3']['s3_bucket_name']
+S3_ACCESS_URL = aws_secret['s3']['s3_access_url']
+
 DEFAULT_FILE_STORAGE = 'src.storages.MediaStorage'
 STATICFILES_STORAGE = 'src.storages.StaticStorage'
 MEDIAFILES_LOCATION = 'media'
 STATICFILES_LOCATION = 'static'
 
+# AWS Congito Access
+COGNITO_ACCESS_KEY_ID = aws_secret['cognito']['access_key_id']
+COGNITO_SECRET_ACCESS_KEY = aws_secret['cognito']['secret_access_key']
+COGNITO_APP_CLIENT_ID = aws_secret['cognito']['app_client_id']
+COGNITO_USER_POOL_ID = aws_secret['cognito']['user_pool_id']
+
 
 #database
-
 DATABASE_SETTINGS_FILE = os.path.join(os.path.join(ROOT_DIR, '.database_key'), 'db_settings.json')
 db_info = json.loads(open(DATABASE_SETTINGS_FILE).read())
 db_dbName = db_info['client']['db']
