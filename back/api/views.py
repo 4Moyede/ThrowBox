@@ -32,10 +32,10 @@ class SignUp(APIView):
                 UserAttributes=[{'Name': 'email', 'Value': request.data['email']}]
             )
             return Response(status=status.HTTP_201_CREATED)
-        except cognito.exceptions.InvalidPasswordException as e:
-            return Response({ 'error' : str(e) }, status=status.HTTP_400_BAD_REQUEST)
-        except cognito.exceptions.UsernameExistsException as e:
-            return Response({ 'error' : str(e) }, status=status.HTTP_409_CONFLICT)
+        except cognito.exceptions.InvalidPasswordException:
+            return Response({ 'error' : "Invaild Password" }, status=status.HTTP_400_BAD_REQUEST)
+        except cognito.exceptions.UsernameExistsException:
+            return Response({ 'error' : "Username Already Exist" }, status=status.HTTP_400_BAD_REQUEST)
 
 
 class SignUpConfirm(APIView):
@@ -49,7 +49,7 @@ class SignUpConfirm(APIView):
             'starred' : False
         }
         serializer = FileSerializer(data=root)
-        if serializer.is_valid(raise_exception=True):
+        if serializer.is_valid():
             serializer.save()
 
             session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
@@ -57,7 +57,7 @@ class SignUpConfirm(APIView):
     
             cognito.admin_update_user_attributes(
                 UserPoolId=COGNITO_USER_POOL_ID,
-                Username='testuser01',
+                Username=username,
                 UserAttributes=[
                     {
                         'Name': 'custom:baseDirID', 
@@ -65,6 +65,8 @@ class SignUpConfirm(APIView):
                     }
                 ]
             )
+        else:
+            raise ValueError
 
     def post(self, request, format=None):
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
@@ -77,14 +79,16 @@ class SignUpConfirm(APIView):
                 ConfirmationCode=request.data['confirmationCode'],
             )
             return Response(status=status.HTTP_200_OK)
-        except cognito.exceptions.ExpiredCodeException as e:
+        except cognito.exceptions.ExpiredCodeException:
             cognito.resend_confirmation_code(
                 ClientId=COGNITO_APP_CLIENT_ID,
                 Username=request.data['username']
             )
-            return Response({ 'error' : str(e) }, status=status.HTTP_404_NOT_FOUND)
-        except cognito.exceptions.CodeMismatchException as e:
-            return Response({ 'error' : str(e) }, status=status.HTTP_406_NOT_ACCEPTABLE)
+            return Response({ 'error' : 'Code is Expired. Please check the new Code' }, status=status.HTTP_404_NOT_FOUND)
+        except cognito.exceptions.CodeMismatchException:
+            return Response({ 'error' : 'Code Mismatch' }, status=status.HTTP_406_NOT_ACCEPTABLE)
+        except ValueError:
+            return Response({ 'error' : 'Mongo DB Error' }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class SignIn(APIView):
@@ -97,11 +101,69 @@ class SignIn(APIView):
                 AuthFlow='USER_PASSWORD_AUTH',
                 AuthParameters={ 'USERNAME': request.data['username'], 'PASSWORD': request.data['password'] },
             )
-            header = { 'AccessToken' : response['AuthenticationResult']['AccessToken'] }
-            return Response(header, status=status.HTTP_200_OK)
-        except cognito.exceptions.NotAuthorizedException as e:
-            err = { 'error': 'Not Authorized' }
-            return Response(err, status=status.HTTP_400_BAD_REQUEST)
+            return Response(headers=response['AuthenticationResult'], status=status.HTTP_200_OK)
+        except cognito.exceptions.UserNotConfirmedException:
+            return Response({ 'error': 'User Not Confirmed' }, status=status.HTTP_401_UNAUTHORIZED)
+        except cognito.exceptions.UserNotFoundException:
+            return Response({ 'error': 'User Not Found' }, status=status.HTTP_400_BAD_REQUEST)
+        except cognito.exceptions.InvalidPasswordException:
+            return Response({ 'error' : "Invaild Password" }, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserDetail(APIView):
+    def get(self, request, format=None):
+        try:
+            session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
+            cognito = session.client("cognito-idp")
+            user = cognito.get_user(AccessToken=request.headers['AccessToken'])
+            userDetail = {
+                'ID' : user['Username'],
+                'email' : next((user_attribute for user_attribute in user['UserAttributes'] if user_attribute['Name'] == 'email'), False)['Value'],
+                'ProfileImage' : ''
+            }
+            return Response(userDetail, status=status.HTTP_200_OK)
+        except (KeyError, cognito.exceptions.NotAuthorizedException):
+            return Response({ 'error': 'Not Authorized' }, status=status.HTTP_401_UNAUTHORIZED)
+        except cognito.exceptions.UserNotConfirmedException:
+            return Response({ 'error': 'User Not Confirmed' }, status=status.HTTP_401_UNAUTHORIZED)
+        except cognito.exceptions.UserNotFoundException:
+            return Response({ 'error': 'User Not Found' }, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserModify(APIView):
+    def post(self, request, format=None):
+        session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
+        cognito = session.client("cognito-idp")
+        
+        try:
+            if request.data['attribute'] == 'password':
+                cognito.change_password(
+                    PreviousPassword=request.data['prePassword'],
+                    ProposedPassword=request.data['proPassword'],
+                    AccessToken=request.headers['AccessToken']
+                )
+                return Response(status=status.HTTP_200_OK)
+        except (KeyError, cognito.exceptions.NotAuthorizedException):
+            return Response({ 'error' : 'Not Authorized' }, status=status.HTTP_401_UNAUTHORIZED)
+        except cognito.exceptions.UserNotConfirmedException:
+            return Response({ 'error': 'User Not Confirmed' }, status=status.HTTP_401_UNAUTHORIZED)
+        except cognito.exceptions.UserNotFoundException:
+            return Response({ 'error': 'User Not Found' }, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserDelete(APIView):
+    def get(self, request, format=None):
+        session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
+        cognito = session.client("cognito-idp")
+        try:
+            cognito.delete_user(AccessToken=request.headers['AccessToken'])
+            return Response(status=status.HTTP_200_OK)
+        except (KeyError, cognito.exceptions.NotAuthorizedException):
+            return Response({ 'error': 'Not Authorized' }, status=status.HTTP_401_UNAUTHORIZED)
+        except cognito.exceptions.UserNotConfirmedException:
+            return Response({ 'error': 'User Not Confirmed' }, status=status.HTTP_401_UNAUTHORIZED)
+        except cognito.exceptions.UserNotFoundException:
+            return Response({ 'error': 'User Not Found' }, status=status.HTTP_400_BAD_REQUEST)
 
 
 class FileList(APIView):
@@ -111,12 +173,21 @@ class FileList(APIView):
         try:
             user = cognito.get_user(AccessToken=request.headers['AccessToken'])
             path = request.GET.get('path', None)
+            if not path:
+                user = cognito.admin_get_user(
+                    UserPoolId=COGNITO_USER_POOL_ID,
+                    Username=user['Username']
+                )
+                path = next((user_attribute for user_attribute in user['UserAttributes'] if user_attribute['Name'] == 'custom:baseDirID'), False)['Value']
             queryset = File.objects.filter(path=path, deletedDate=None)
             serializer = FileSerializer(queryset, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except (KeyError, cognito.exceptions.NotAuthorizedException):
-            err = { 'error': 'Not Authorized' }
-            return Response(err, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({ 'error': 'Not Authorized' }, status=status.HTTP_401_UNAUTHORIZED)
+        except cognito.exceptions.UserNotConfirmedException:
+            return Response({ 'error': 'User Not Confirmed' }, status=status.HTTP_401_UNAUTHORIZED)
+        except cognito.exceptions.UserNotFoundException:
+            return Response({ 'error': 'User Not Found' }, status=status.HTTP_400_BAD_REQUEST)
 
 
 class FileUpload(APIView):
@@ -144,7 +215,14 @@ class FileUpload(APIView):
             for idx, file in enumerate(request.FILES.getlist('file')):
                 uploadedFile = {}
                 file_path = str(request.data.getlist('path')[idx])
+                if not file_path:
+                    user = cognito.admin_get_user(
+                        UserPoolId=COGNITO_USER_POOL_ID,
+                        Username=user['Username']
+                    )
+                    file_path = next((user_attribute for user_attribute in user['UserAttributes'] if user_attribute['Name'] == 'custom:baseDirID'), False)['Value']
                 file.name = self.checkDuplicate(file.name, file_path)
+
                 uploadedFile['name'] = file.name
                 uploadedFile['path'] = file_path
                 uploadedFile['isFile'] = request.data.getlist('isFile')[idx]
@@ -164,8 +242,7 @@ class FileUpload(APIView):
                     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             return Response(uploadedList, status=status.HTTP_201_CREATED)
         except (KeyError, cognito.exceptions.NotAuthorizedException):
-            err = { 'error': 'Not Authorized' }
-            return Response(err, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({ 'error': 'Not Authorized' }, status=status.HTTP_401_UNAUTHORIZED)
 
 
 class FolderUpload(APIView):
@@ -174,14 +251,24 @@ class FolderUpload(APIView):
         cognito = session.client("cognito-idp")
         try:
             user = cognito.get_user(AccessToken=request.headers['AccessToken'])
-            serializer = FileSerializer(data=request.data)
+            req = request.data
+            if not req['path']:
+                user = cognito.admin_get_user(
+                    UserPoolId=COGNITO_USER_POOL_ID,
+                    Username=user['Username']
+                )
+                req['path'] = next((user_attribute for user_attribute in user['UserAttributes'] if user_attribute['Name'] == 'custom:baseDirID'), False)['Value']
+            serializer = FileSerializer(data=req)
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except (KeyError, cognito.exceptions.NotAuthorizedException):
-            err = { 'error': 'Not Authorized' }
-            return Response(err, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({ 'error': 'Not Authorized' }, status=status.HTTP_401_UNAUTHORIZED)
+        except cognito.exceptions.UserNotConfirmedException:
+            return Response({ 'error': 'User Not Confirmed' }, status=status.HTTP_401_UNAUTHORIZED)
+        except cognito.exceptions.UserNotFoundException:
+            return Response({ 'error': 'User Not Found' }, status=status.HTTP_400_BAD_REQUEST)
         
 
 class FileDownload(APIView):
@@ -189,7 +276,7 @@ class FileDownload(APIView):
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
         try:
-            user = cognito.get_user(AccessToken=request.headers['AccessToken'])
+            cognito.get_user(AccessToken=request.headers['AccessToken'])
             request_fid = request.GET.get('fid', None)
             target = File.objects.get(pk=request_fid)
             download_url = S3_ACCESS_URL + request_fid
@@ -199,11 +286,13 @@ class FileDownload(APIView):
             }
             return Response(res, status=status.HTTP_200_OK)
         except File.DoesNotExist:
-            err = { 'error': 'File Does not Exist' }
-            return Response(err, status=status.HTTP_400_BAD_REQUEST)
+            return Response({ 'error': 'File Does not Exist' }, status=status.HTTP_400_BAD_REQUEST)
         except (KeyError, cognito.exceptions.NotAuthorizedException):
-            err = { 'error': 'Not Authorized' }
-            return Response(err, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({ 'error': 'Not Authorized' }, status=status.HTTP_401_UNAUTHORIZED)
+        except cognito.exceptions.UserNotConfirmedException:
+            return Response({ 'error': 'User Not Confirmed' }, status=status.HTTP_401_UNAUTHORIZED)
+        except cognito.exceptions.UserNotFoundException:
+            return Response({ 'error': 'User Not Found' }, status=status.HTTP_400_BAD_REQUEST)
         
         
 class FileErase(APIView):

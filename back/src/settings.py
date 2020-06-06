@@ -141,7 +141,11 @@ CORS_ALLOW_METHODS = (
 CORS_ALLOW_HEADERS = (
     'accept',
     'accept-encoding',
-    'authorization',
+    'AccessToken',
+    'ExpiresIn',
+    'IdToken',
+    'RefreshToken',
+    'TokenType',
     'content-type',
     'dnt',
     'origin',
