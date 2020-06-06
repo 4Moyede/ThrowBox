@@ -159,7 +159,7 @@ class UserDelete(APIView):
             cognito.delete_user(AccessToken=request.headers['AccessToken'])
             return Response(status=status.HTTP_200_OK)
         except (KeyError, cognito.exceptions.NotAuthorizedException):
-            return Response({ 'error': 'Not Authorized' }, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({ 'error': 'Not Author정ized' }, status=status.HTTP_401_UNAUTHORIZED)
         except cognito.exceptions.UserNotConfirmedException:
             return Response({ 'error': 'User Not Confirmed' }, status=status.HTTP_401_UNAUTHORIZED)
         except cognito.exceptions.UserNotFoundException:
@@ -171,7 +171,7 @@ class FileList(APIView):
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
         try:
-            user = cognito.get_user(AccessToken=request.headers['AccessToken'])
+            user = cognito.get_user(AccessToken=request.headers['authorization'])
             path = request.GET.get('path', None)
             if not path:
                 user = cognito.admin_get_user(
@@ -209,7 +209,7 @@ class FileUpload(APIView):
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
         try:
-            user = cognito.get_user(AccessToken=request.headers['AccessToken'])
+            user = cognito.get_user(AccessToken=request.headers['authorization'])
             uploadedList = []
             
             for idx, file in enumerate(request.FILES.getlist('file')):

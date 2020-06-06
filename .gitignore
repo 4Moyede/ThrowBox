@@ -8,6 +8,8 @@ node_modules
 # local env files
 env
 
+migrations/
+/migrations
 # Log files
 npm-debug.log*
 yarn-debug.log*

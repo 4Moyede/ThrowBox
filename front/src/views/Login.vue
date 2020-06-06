@@ -24,7 +24,7 @@
                   <v-text-field
                     color="secondary"
                     label="ID"
-                    v-model="LoginForm.id"
+                    v-model="LoginForm.username"
                     :error-messages="errors"
                     clearable
                     filled
@@ -65,14 +65,10 @@
                 </v-row>
               </v-form>
               <v-form v-if="tab===1">
-                <ValidationProvider
-                  name="id"
-                  rules="required|min:4|max:15"
-                  v-slot="{ errors }"
-                >
+                <ValidationProvider name="id" rules="required|min:4|max:15" v-slot="{ errors }">
                   <v-text-field
                     prepend-inner-icon="mdi-account"
-                    v-model="SignUpForm.id"
+                    v-model="SignUpForm.username"
                     :counter="15"
                     :error-messages="errors"
                     label="ID"
@@ -81,25 +77,8 @@
                   ></v-text-field>
                 </ValidationProvider>
                 <ValidationProvider
-                  name="nickname"
-                  rules="required|min:3|max:15"
-                  v-slot="{ errors }"
-                >
-                  <v-text-field
-                    style="margin-top: 5px"
-                    prepend-inner-icon="mdi-emoticon-happy-outline"
-                    v-model="SignUpForm.nickname"
-                    :counter="15"
-                    :error-messages="errors"
-                    label="Nickname"
-                    autocomplete
-                    color="secondary"
-                    type="text"
-                  ></v-text-field>
-                </ValidationProvider>
-                <ValidationProvider
                   name="password"
-                  rules="required|min:6|max:30"
+                  rules="required|min:8|max:30"
                   v-slot="{ errors }"
                 >
                   <v-text-field
@@ -116,7 +95,7 @@
                 </ValidationProvider>
                 <ValidationProvider
                   name="passwordConfirm"
-                  rules="required|min:6|max:30|confirmed:password"
+                  rules="required|min:8|max:30|confirmed:password"
                   v-slot="{ errors }"
                 >
                   <v-text-field
@@ -159,6 +138,59 @@
           </div>
         </v-card>
       </v-col>
+      <!-- email auth dialog -->
+      <v-dialog max-width="600" persistent v-model="emailAuthDialog">
+        <v-card max-width="600" class="pa-3">
+          <div class="dialogTitle">SignUp Confirmation</div>
+          <div class="mt-1 mb-4 signInDivider"></div>
+          <div class="dialogSubTitle">We sent the confirmation code to the email you entered.</div>
+          <div class="dialogSubTitle">Please enter your ID and Code in the form below.</div>
+          <ValidationObserver ref="obs" v-slot="{ invalid, validated}">
+            <v-form
+              style="margin: auto"
+              :style="$vuetify.breakpoint.xs ? 'width: 250px' : 'width: 350px'"
+            >
+              <ValidationProvider name="id" rules="required|min:4|max:15" v-slot="{ errors }">
+                <v-text-field
+                  prepend-inner-icon="mdi-account"
+                  v-model="emailConfirmData.username"
+                  :counter="15"
+                  :error-messages="errors"
+                  label="ID"
+                  color="secondary"
+                  type="text"
+                ></v-text-field>
+              </ValidationProvider>
+              <ValidationProvider name="id" rules="required|min:4|max:15" v-slot="{ errors }">
+                <v-text-field
+                  prepend-inner-icon="mdi-lock-clock"
+                  v-model="emailConfirmData.confirmationCode"
+                  :counter="15"
+                  :error-messages="errors"
+                  label="Code"
+                  color="secondary"
+                  type="text"
+                ></v-text-field>
+              </ValidationProvider>
+            </v-form>
+            <v-row justify="end" class="mx-0 mt-6">
+              <v-btn
+                color="secondary"
+                @click="emailAuth"
+                class="mr-3"
+                :disabled="invalid || !validated"
+              >Confirm</v-btn>
+            </v-row>
+          </ValidationObserver>
+        </v-card>
+      </v-dialog>
+      <!--  -->
+      <notify
+        @clickOk="notifyClickOk"
+        :onFlag="resultDialog"
+        :message="rtMsg"
+      />
+      <!--  -->
     </v-row>
   </v-sheet>
 </template>
@@ -172,30 +204,42 @@ nav {
 
 <script>
 import { ValidationProvider, ValidationObserver } from 'vee-validate';
+import Notify from '../components/Notify.vue';
 
 export default {
   components: {
     ValidationProvider,
     ValidationObserver,
+    Notify,
   },
   data() {
     return {
-      title: '',
+      title: null,
       LoginForm: {
-        id: '',
-        password: '',
+        username: null,
+        password: null,
       },
       SignUpForm: {
-        id: '',
-        email: '',
-        password: '',
-        passwordConfirm: '',
-        nickname: '',
+        username: null,
+        email: null,
+        password: null,
+        passwordConfirm: null,
       },
+      emailConfirmData: {
+        username: null,
+        confirmationCode: null,
+      },
+
       tab: 0,
+      emailAuthDialog: false,
+
+      resultDialog: false,
+
+      rtMsg: null,
     };
   },
   created() {
+    if (this.$store.getters.getAccessToken) this.$router.replace('/');
     this.title = 'Log In to Throw Box';
   },
   watch: {
@@ -209,34 +253,60 @@ export default {
   },
   methods: {
     Login() {
-      console.log(this.LoginForm);
-      // this.$axios
-      //   .post('/auth/token', this.form)
-      //   .then((r) => {
-      //     localStorage.setItem('accessToken', r.data.accessToken);
-      //     localStorage.setItem('refreshToken', r.data.refreshToken);
-      //     localStorage.setItem('expiryDtime', r.data.expiryDtime);
-      //     this.$axios
-      //       .get('/mypage/profile', {
-      //         headers: { 'X-AUTH-TOKEN': r.data.accessToken },
-      //       })
-      //       .then((userData) => {
-      //         localStorage.setItem('userName', userData.data.engName);
-      //         const base64 = `data:img/png;base64, ${userData.data.base64Photo}`;
-      //         localStorage.setItem('profileIMG', base64);
-      //         this.$store.dispatch('commitGetToken');
-      //         this.$router.replace('/');
-      //       });
-      //   })
-      //   .catch((e) => {
-      //     console.log(e);
-      //   });
+      this.$axios
+        .post('/signIn/', this.LoginForm)
+        .then((r) => {
+          localStorage.setItem('accessToken', r.data.AccessToken);
+          this.$store.dispatch('commitGetToken');
+          this.$router.replace('/');
+          console.log(r);
+        })
+        .catch((e) => {
+          console.log(e.response);
+          this.resultDialog = true;
+          this.rtMsg = e.response.data.error;
+        });
     },
     SignUp() {
-      console.log(this.SignUpForm);
-    },
-    findPassword() {
+      this.$axios
+        .post('/signUp/', this.SignUpForm)
+        .then(() => {
+          this.emailAuthDialog = true;
+          this.emailConfirmData.username = this.SignUpForm.username;
+        })
+        .catch((e) => {
+          console.log(e.response);
+          this.resultDialog = true;
 
+          this.rtMsg = e.response.data.error;
+        });
+    },
+    emailAuth() {
+      this.$axios
+        .post('/signUpConfirm/', this.emailConfirmData)
+        .then((r) => {
+          console.log(r);
+          this.emailAuthDialog = false;
+          this.resultDialog = true;
+          this.rtMsg = 'You have Successfully signed up ThrowBox!';
+        })
+        .catch((e) => {
+          console.log(e);
+          this.resultDialog = true;
+
+          this.rtMsg = e.response.data.error;
+        });
+    },
+    findPassword() {},
+    notifyClickOk() {
+      this.resultDialog = false;
+      if (this.rtMsg === 'You have Successfully signed up ThrowBox!') {
+        this.SignUpForm.username = null;
+        this.SignUpForm.password = null;
+        this.SignUpForm.passwordConfirm = null;
+        this.SignUpForm.email = null;
+        this.tab = 0;
+      }
     },
   },
 };
@@ -255,6 +325,20 @@ export default {
   text-align: center;
   font-size: 30px;
   font-weight: 300;
+  letter-spacing: 2px;
+}
+.dialogTitle {
+  color: #343a40;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 300;
+  letter-spacing: 2px;
+}
+.dialogSubTitle {
+  color: #5a5a5a;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 400;
   letter-spacing: 2px;
 }
 </style>
