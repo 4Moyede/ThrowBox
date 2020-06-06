@@ -101,7 +101,7 @@ class SignIn(APIView):
                 AuthFlow='USER_PASSWORD_AUTH',
                 AuthParameters={ 'USERNAME': request.data['username'], 'PASSWORD': request.data['password'] },
             )
-            return Response(headers=response['AuthenticationResult'], status=status.HTTP_200_OK)
+            return Response(response['AuthenticationResult'], status=status.HTTP_200_OK)
         except cognito.exceptions.UserNotConfirmedException:
             return Response({ 'error': 'User Not Confirmed' }, status=status.HTTP_401_UNAUTHORIZED)
         except cognito.exceptions.UserNotFoundException:
@@ -159,7 +159,7 @@ class UserDelete(APIView):
             cognito.delete_user(AccessToken=request.headers['AccessToken'])
             return Response(status=status.HTTP_200_OK)
         except (KeyError, cognito.exceptions.NotAuthorizedException):
-            return Response({ 'error': 'Not Author정ized' }, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({ 'error': 'Not Authorized' }, status=status.HTTP_401_UNAUTHORIZED)
         except cognito.exceptions.UserNotConfirmedException:
             return Response({ 'error': 'User Not Confirmed' }, status=status.HTTP_401_UNAUTHORIZED)
         except cognito.exceptions.UserNotFoundException:
@@ -171,7 +171,6 @@ class FileList(APIView):
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
         try:
-            print(request.headers['AccessToken'])
             user = cognito.get_user(AccessToken=request.headers['AccessToken'])
             path = request.GET.get('path', None)
             if not path:
@@ -252,14 +251,20 @@ class FolderUpload(APIView):
         cognito = session.client("cognito-idp")
         try:
             user = cognito.get_user(AccessToken=request.headers['AccessToken'])
-            req = request.data
-            if not req['path']:
+            dir_path = request.data['path']
+            if not dir_path:
                 user = cognito.admin_get_user(
                     UserPoolId=COGNITO_USER_POOL_ID,
                     Username=user['Username']
                 )
-                req['path'] = next((user_attribute for user_attribute in user['UserAttributes'] if user_attribute['Name'] == 'custom:baseDirID'), False)['Value']
-            serializer = FileSerializer(data=req)
+                dir_path = next((user_attribute for user_attribute in user['UserAttributes'] if user_attribute['Name'] == 'custom:baseDirID'), False)['Value']
+            new_dir = { }
+            new_dir['name'] = request.data['name']
+            new_dir['path'] = dir_path
+            new_dir['isFile'] = request.data['isFile']
+            new_dir['author'] = request.data['author']
+            new_dir['fileSize'] = request.data['fileSize']
+            serializer = FileSerializer(data=new_dir)
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
