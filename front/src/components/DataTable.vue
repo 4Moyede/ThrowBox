@@ -248,6 +248,7 @@
 <script>
 /* eslint-disable no-underscore-dangle */
 // @ is an alias to /src
+import { mapGetters } from 'vuex';
 import Notify from './Notify.vue';
 
 export default {
@@ -309,6 +310,10 @@ export default {
     console.log(this.pathArray);
   },
   computed: {
+    ...mapGetters({
+      getToken: 'getAccessToken',
+      getUserName: 'getUserName',
+    }),
     // path
     convertPath() {
       let path = '/';
