@@ -13,7 +13,7 @@ import boto3
 from boto3.session import Session
 from src.settings import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, AWS_REGION
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from bson import ObjectId
 
 class FileList(APIView):
@@ -92,12 +92,15 @@ class FileDownload(APIView):
         
 class FileErase(APIView):
     def delete(self, request, format=None):
-        # quaryset = File.objects.filter(deletedDate < datetime.now() - 30)    # 날짜체크 수정해야함
+        deletedDate = request.GET.get('deletedDate', None)
+        quaryset = File.objects.filter((deletedDate - datetime.now()).days > 30) 
 
-        s3 = boto3.client('s3', aws_access_key_id = AWS_ACCESS_KEY_ID, aws_secret_access_key = AWS_SECRET_ACCESS_KEY,)
-        # s3.delete_object(Bucket=AWS_STORAGE_BUCKET_NAME, Key=file_key)  # s3에서 삭제, 여러파일 동시에 삭제하도록 수정해야함
+        s3 = boto3.client('s3', region_name = AWS_REGION)
+        keys_to_delete = [{'Key': object['fid']} for object in quaryset]
+        s3.delete_objects(Bucket = AWS_STORAGE_BUCKET_NAME, Delete={'Objects': keys_to_delete}) # s3에서 삭제
 
-        # quaryset.delete()   # DB에서 삭제, deletedDate부터 30일 지난 날짜 체크
+        quaryset.delete()
+        return Response(status = status.HTTP_200_OK)
         
 
 class FileStarred(APIView) :
