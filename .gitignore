@@ -10,6 +10,8 @@ env
 
 migrations/
 /migrations
+run.sh
+runMig.sh
 # Log files
 npm-debug.log*
 yarn-debug.log*
