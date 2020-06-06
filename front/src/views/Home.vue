@@ -85,7 +85,6 @@ export default {
       this.$axios
         .get('/fileList/', {
           params: this.params,
-          headers: { authorization: this.getToken },
         })
         .then((r) => {
           this.getFiles = r.data;

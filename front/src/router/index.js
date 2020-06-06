@@ -15,6 +15,12 @@ axios.defaults.baseURL = apiRootPath;
 //   return config;
 // }, (error) => Promise.reject(error));
 
+axios.interceptors.request.use((config) => {
+  config.headers.authorization = localStorage.getItem('accessToken');
+  return config;
+}, (error) => Promise.reject(error));
+
+
 Vue.use(VueRouter);
 
 const routes = [

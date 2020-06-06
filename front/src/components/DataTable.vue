@@ -236,7 +236,11 @@
         <input ref="fileInput" style="display: none" type="file" @change="onFileChange" />
       </v-layout>
       <!--  -->
-
+      <notify
+        @clickOk="notifyClickOk"
+        :onFlag="resultDialog"
+        :message="rtMsg"
+      />
     </v-card>
   </v-sheet>
 </template>
@@ -244,6 +248,7 @@
 <script>
 /* eslint-disable no-underscore-dangle */
 // @ is an alias to /src
+import Notify from './Notify.vue';
 
 export default {
   name: 'DataTable',
@@ -277,15 +282,11 @@ export default {
       default: null,
     },
   },
-  components: {},
+  components: { Notify },
   data() {
     return {
       folderName: '',
       pathArray: [],
-      userInfo: {
-        id: '',
-        email: '',
-      },
       uploadForm: [],
       fileSpecific: {},
       // dialog
@@ -293,6 +294,9 @@ export default {
       fileSpecificDialog: false,
       uploadProgress: false,
       actionNotify: false,
+
+      resultDialog: false,
+      rtMsg: null,
 
       // pagination & params
     };
@@ -355,12 +359,14 @@ export default {
       this.$refs.fileInput.click();
     },
     onFileChange(event) {
+      console.log(this.tableParams.path);
+
       this.uploadFile(event.target.files);
     },
     // 파일 업로드
     uploadFile(files) {
       this.uploadProgress = true;
-      console.log(files);
+      console.log(this.tableParams.path);
       const formData = new FormData();
       for (let i = 0; i < files.length; i += 1) {
         formData.append('file', files[i]);
@@ -370,7 +376,6 @@ export default {
         formData.append('isFile', true);
         formData.append('fileSize', files[i].size);
       }
-      console.log(formData);
       this.$axios
         .post('/fileUpload/', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
@@ -382,7 +387,9 @@ export default {
           }
         })
         .catch((e) => {
-          console.log(e.message);
+          console.log(e.response);
+          this.resultDialog = true;
+          this.rtMsg = e.response.data.error;
         });
     },
 
@@ -408,7 +415,9 @@ export default {
             this.loadedFiles.push(r.data);
           })
           .catch((e) => {
-            console.log(e.message);
+            console.log(e.response);
+            this.resultDialog = true;
+            this.rtMsg = e.response.data.error;
           });
       }
     },
@@ -438,7 +447,9 @@ export default {
           console.log(r.data.download_url);
         })
         .catch((e) => {
-          console.log(e.message);
+          console.log(e.response);
+          this.resultDialog = true;
+          this.rtMsg = e.response.data.error;
         });
     },
     // 파일 삭제
@@ -450,7 +461,9 @@ export default {
           console.log(r);
         })
         .catch((e) => {
-          console.log(e.message);
+          console.log(e.response);
+          this.resultDialog = true;
+          this.rtMsg = e.response.data.error;
         });
     },
     // 파일 복구
@@ -462,7 +475,9 @@ export default {
           console.log(r);
         })
         .catch((e) => {
-          console.log(e.message);
+          console.log(e.response);
+          this.resultDialog = true;
+          this.rtMsg = e.response.data.error;
         });
     },
     // 이름 변경
@@ -513,7 +528,12 @@ export default {
       }
       return 'file';
     },
+    notifyClickOk() {
+      this.resultDialog = false;
+      this.uploadProgress = false;
+    },
   },
+
 };
 </script>
 
