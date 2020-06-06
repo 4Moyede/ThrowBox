@@ -15,6 +15,7 @@
 
 <script>
 import moment from 'moment';
+import { mapGetters } from 'vuex';
 import DataTable from '../components/DataTable.vue';
 
 export default {
@@ -60,8 +61,12 @@ export default {
   created() {
     // await this.loadUserInfo();
     // 회원관리 api 완성 시 vuex에 저장된 rootPath.
-    this.params.path = '5ecf4c35cbf89502da2cab57';
     this.requestFiles();
+  },
+  computed: {
+    ...mapGetters({
+      getToken: 'getAccessToken',
+    }),
   },
   methods: {
     // 데이터 로드
@@ -78,7 +83,10 @@ export default {
     requestFiles() {
       this.dataLoading = true;
       this.$axios
-        .get('/fileList/', { params: this.params })
+        .get('/fileList/', {
+          params: this.params,
+          headers: { authorization: this.getToken },
+        })
         .then((r) => {
           this.getFiles = r.data;
           this.dataLoading = false;

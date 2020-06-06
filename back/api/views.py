@@ -60,7 +60,7 @@ class SignUpConfirm(APIView):
 
 
 class SignIn(APIView):
-    def get(self, request, format=None):
+    def post(self, request, format=None):
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
         try:
@@ -80,7 +80,7 @@ class FileList(APIView):
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
         try:
-            user = cognito.get_user(AccessToken=request.headers['AccessToken'])
+            user = cognito.get_user(AccessToken=request.headers['authorization'])
             path = request.GET.get('path', None)
             queryset = File.objects.filter(path=path, deletedDate=None)
             serializer = FileSerializer(queryset, many=True)
@@ -108,7 +108,7 @@ class FileUpload(APIView):
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
         try:
-            user = cognito.get_user(AccessToken=request.headers['AccessToken'])
+            user = cognito.get_user(AccessToken=request.headers['authorization'])
             uploadedList = []
             
             for idx, file in enumerate(request.FILES.getlist('file')):
@@ -120,7 +120,6 @@ class FileUpload(APIView):
                 uploadedFile['isFile'] = request.data.getlist('isFile')[idx]
                 uploadedFile['author'] = request.data.getlist('author')[idx]
                 uploadedFile['fileSize'] = request.data.getlist('fileSize')[idx]
-                uploadedFile['createdDate'] = request.data.getlist('createdDate')[idx]
 
                 serializer = FileSerializer(data=uploadedFile)
                 if serializer.is_valid():
@@ -143,7 +142,7 @@ class FolderUpload(APIView):
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
         try:
-            user = cognito.get_user(AccessToken=request.headers['AccessToken'])
+            user = cognito.get_user(AccessToken=request.headers['authorization'])
             serializer = FileSerializer(data=request.data)
             if serializer.is_valid():
                 serializer.save()
@@ -158,7 +157,7 @@ class FileDownload(APIView):
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
         try:
-            user = cognito.get_user(AccessToken=request.headers['AccessToken'])
+            user = cognito.get_user(AccessToken=request.headers['authorization'])
             request_fid = request.GET.get('fid', None)
             target = File.objects.get(pk=request_fid)
             download_url = S3_ACCESS_URL + request_fid
