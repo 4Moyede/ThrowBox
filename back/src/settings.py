@@ -127,7 +127,6 @@ CORS_ORIGIN_WHITELIST = [
     "http://127.0.0.1:12233",
     "http://localhost:8080",
     "http://127.0.0.1:9000",
-    "mongodb://172.31.86.151",
 ]
 CORS_URLS_REGEX = r'^/api/.*$'
 CORS_ALLOW_METHODS = (
@@ -142,7 +141,11 @@ CORS_ALLOW_METHODS = (
 CORS_ALLOW_HEADERS = (
     'accept',
     'accept-encoding',
-    'authorization',
+    'AccessToken',
+    'ExpiresIn',
+    'IdToken',
+    'RefreshToken',
+    'TokenType',
     'content-type',
     'dnt',
     'origin',
