@@ -171,7 +171,8 @@ class FileList(APIView):
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
         try:
-            user = cognito.get_user(AccessToken=request.headers['authorization'])
+            print(request.headers['AccessToken'])
+            user = cognito.get_user(AccessToken=request.headers['AccessToken'])
             path = request.GET.get('path', None)
             if not path:
                 user = cognito.admin_get_user(
@@ -209,7 +210,7 @@ class FileUpload(APIView):
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
         try:
-            user = cognito.get_user(AccessToken=request.headers['authorization'])
+            user = cognito.get_user(AccessToken=request.headers['AccessToken'])
             uploadedList = []
             
             for idx, file in enumerate(request.FILES.getlist('file')):
