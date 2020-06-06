@@ -14,7 +14,7 @@ import boto3
 from boto3.session import Session
 from src.settings import AWS_REGION
 from src.settings import S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_STORAGE_BUCKET_NAME, S3_ACCESS_URL
-from src.settings import COGNITO_ACCESS_KEY_ID, COGNITO_SECRET_ACCESS_KEY, COGNITO_APP_CLIENT_ID
+from src.settings import COGNITO_ACCESS_KEY_ID, COGNITO_SECRET_ACCESS_KEY, COGNITO_APP_CLIENT_ID, COGNITO_USER_POOL_ID
 
 from datetime import datetime
 from bson import ObjectId
@@ -39,10 +39,38 @@ class SignUp(APIView):
 
 
 class SignUpConfirm(APIView):
+    def mkdirRoot(self, username):
+        root = {
+            'isFile' : False,
+            'author' : username,
+            'name' : username+"_root",
+            'path' : "This is a root directory",
+            'fileSize' : 0,
+            'starred' : False
+        }
+        serializer = FileSerializer(data=root)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+
+            session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
+            cognito = session.client("cognito-idp")
+    
+            cognito.admin_update_user_attributes(
+                UserPoolId=COGNITO_USER_POOL_ID,
+                Username='testuser01',
+                UserAttributes=[
+                    {
+                        'Name': 'custom:baseDirID', 
+                        'Value': serializer.data['fid']
+                    }
+                ]
+            )
+
     def post(self, request, format=None):
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
         try:
+            self.mkdirRoot(request.data['username'])
             res = cognito.confirm_sign_up(
                 ClientId=COGNITO_APP_CLIENT_ID,
                 Username=request.data['username'],
@@ -56,11 +84,11 @@ class SignUpConfirm(APIView):
             )
             return Response({ 'error' : str(e) }, status=status.HTTP_404_NOT_FOUND)
         except cognito.exceptions.CodeMismatchException as e:
-            return Response({ 'error' : str(e) }, status=status.HTTP_400_BAD_REQUEST)
+            return Response({ 'error' : str(e) }, status=status.HTTP_406_NOT_ACCEPTABLE)
 
 
 class SignIn(APIView):
-    def get(self, request, format=None):
+    def post(self, request, format=None):
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
         try:
@@ -72,7 +100,8 @@ class SignIn(APIView):
             header = { 'AccessToken' : response['AuthenticationResult']['AccessToken'] }
             return Response(header, status=status.HTTP_200_OK)
         except cognito.exceptions.NotAuthorizedException as e:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            err = { 'error': 'Not Authorized' }
+            return Response(err, status=status.HTTP_400_BAD_REQUEST)
 
 
 class FileList(APIView):
@@ -86,7 +115,8 @@ class FileList(APIView):
             serializer = FileSerializer(queryset, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except (KeyError, cognito.exceptions.NotAuthorizedException):
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
+            err = { 'error': 'Not Authorized' }
+            return Response(err, status=status.HTTP_401_UNAUTHORIZED)
 
 
 class FileUpload(APIView):
@@ -120,7 +150,6 @@ class FileUpload(APIView):
                 uploadedFile['isFile'] = request.data.getlist('isFile')[idx]
                 uploadedFile['author'] = request.data.getlist('author')[idx]
                 uploadedFile['fileSize'] = request.data.getlist('fileSize')[idx]
-                uploadedFile['createdDate'] = request.data.getlist('createdDate')[idx]
 
                 serializer = FileSerializer(data=uploadedFile)
                 if serializer.is_valid():
@@ -135,7 +164,8 @@ class FileUpload(APIView):
                     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             return Response(uploadedList, status=status.HTTP_201_CREATED)
         except (KeyError, cognito.exceptions.NotAuthorizedException):
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
+            err = { 'error': 'Not Authorized' }
+            return Response(err, status=status.HTTP_401_UNAUTHORIZED)
 
 
 class FolderUpload(APIView):
@@ -150,7 +180,8 @@ class FolderUpload(APIView):
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except (KeyError, cognito.exceptions.NotAuthorizedException):
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
+            err = { 'error': 'Not Authorized' }
+            return Response(err, status=status.HTTP_401_UNAUTHORIZED)
         
 
 class FileDownload(APIView):
@@ -168,16 +199,18 @@ class FileDownload(APIView):
             }
             return Response(res, status=status.HTTP_200_OK)
         except File.DoesNotExist:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            err = { 'error': 'File Does not Exist' }
+            return Response(err, status=status.HTTP_400_BAD_REQUEST)
         except (KeyError, cognito.exceptions.NotAuthorizedException):
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
+            err = { 'error': 'Not Authorized' }
+            return Response(err, status=status.HTTP_401_UNAUTHORIZED)
         
         
 class FileErase(APIView):
     def delete(self, request, format=None):
         # quaryset = File.objects.filter(deletedDate < datetime.now() - 30)    # 날짜체크 수정해야함
 
-        s3 = boto3.client('s3', aws_access_key_id = AWS_ACCESS_KEY_ID, aws_secret_access_key = AWS_SECRET_ACCESS_KEY,)
+        s3 = boto3.client('s3', aws_access_key_id = S3_ACCESS_KEY_ID, aws_secret_access_key = S3_SECRET_ACCESS_KEY,)
         # s3.delete_object(Bucket=AWS_STORAGE_BUCKET_NAME, Key=file_key)  # s3에서 삭제, 여러파일 동시에 삭제하도록 수정해야함
 
         # quaryset.delete()   # DB에서 삭제, deletedDate부터 30일 지난 날짜 체크
