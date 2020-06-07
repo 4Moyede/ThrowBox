@@ -1,4 +1,5 @@
 from djongo import models
+from django.utils import timezone
 
 
 class File(models.Model):
@@ -10,4 +11,4 @@ class File(models.Model):
     fileSize = models.IntegerField()
     starred = models.BooleanField(default = False)
     createdDate = models.CharField(max_length=20)
-    deletedDate = models.CharField(max_length=20, null=True)
+    deletedDate = models.DateTimeField()

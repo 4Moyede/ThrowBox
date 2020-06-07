@@ -117,11 +117,19 @@ class FileStarred(APIView) :
             return Response(status = status.HTTP_200_OK)
         return Response(status = status.HTTP_400_BAD_REQUEST)
 
-
 class fileTrash(APIView):
-    #즐겨찾기 삭제 추가할 것.
-    def post(self,request,format=None):#리퀘 데이터에 삭제 시간,id
-        print(type(request.data))
-        print(request.data['file_id'],request.data['deletedDate'])
-        File.objects.filter(fid= ObjectId(request.data['file_id'])).update(deletedDate=request.data['deletedDate'])
+    def post(self,request,format=None):
+        try:
+            File.objects.filter(fid= ObjectId(request.data['file_id'])).update(deletedDate=datetime.now())
+        except:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_200_OK)
+
+class fileRecovery(APIView):#request data->fid
+    #복구되는 디렉토리가 삭제 될 경우 해당 파일도 삭제 될 것으로 예상
+    def post(self, request, format=None):
+        try:
+            File.objects.filter(fid= ObjectId(request.data['file_id'])).update(deletedDate=None)
+        except:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_200_OK)
