@@ -13,7 +13,6 @@
 </template>
 
 <script>
-import moment from 'moment';
 import DataTable from '../components/DataTable.vue';
 
 export default {
@@ -76,9 +75,6 @@ export default {
             if (!this.getFiles[i].isFile || this.getFiles[i].deletedDate === null) {
               this.getFiles.splice(i, 1);
             }
-            // fid to Date
-            const convertDate = moment(parseInt(this.getFiles[i].fid.substring(0, 8), 16) * 1000).format('YYYY-MM-DD hh:MM');
-            this.getFiles[i].createdDate = convertDate;
             // Favorite 초기
             // for (let j = 0; j < this.getFiles[i].favorite.length; j += 1) {
             //   const favAuthor = this.getFiles[i].favorite[j];

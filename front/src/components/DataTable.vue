@@ -128,7 +128,7 @@
                 </v-row>
               </td>
               <td>
-                <div class="createdDateStyle" style="text-align: end">{{item.createdDate}}</div>
+                <div class="createdDateStyle" style="text-align: end">{{convertDate(item.fid)}} </div>
               </td>
               <td>
                 <div class="fileSizeStyle" style="text-align: end">{{getfileSize(item.fileSize)}}</div>
@@ -193,7 +193,7 @@
               <div class="dialogSubtitle">Created Date</div>
             </v-col>
             <v-col cols="8">
-              <div class="dialogContents">{{fileSpecific.createdDate}}</div>
+              <div class="dialogContents">{{convertDate(fileSpecific.fid)}}</div>
             </v-col>
           </v-row>
           <v-row class="mt-n1 mx-0">
@@ -248,6 +248,7 @@
 <script>
 /* eslint-disable no-underscore-dangle */
 // @ is an alias to /src
+import moment from 'moment';
 import { mapGetters } from 'vuex';
 import Notify from './Notify.vue';
 
@@ -330,6 +331,12 @@ export default {
         return `${(data / 1024 ** Math.floor(Math.log(data) / Math.log(1024))).toFixed(2)} ${s[Math.floor(Math.log(data) / Math.log(1024))]}`;
       };
     },
+    convertDate() {
+      return (data) => {
+        if (data === undefined) return '';
+        return moment(parseInt(data.substring(0, 8), 16) * 1000).format('YYYY-MM-DD hh:MM');
+      };
+    },
   },
   methods: {
     // 데이터 호출
@@ -369,8 +376,8 @@ export default {
     },
     // 파일 업로드
     uploadFile(files) {
+      console.log(this.getUserName);
       this.uploadProgress = true;
-      console.log(this.tableParams.path);
       const formData = new FormData();
       for (let i = 0; i < files.length; i += 1) {
         formData.append('file', files[i]);
@@ -429,6 +436,7 @@ export default {
     clickFile(data) {
       if (data.isFile) {
         this.fileSpecific = data;
+        console.log(this.fileSpecific);
         this.fileSpecificDialog = true;
       } else {
         this.onClickFolder(data);
