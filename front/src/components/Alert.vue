@@ -1,11 +1,12 @@
 <template>
   <v-dialog max-width="400" v-model="onFlag" persistent>
     <v-card outlined max-width="400" class="pa-4">
-      <div class="dialogTitle">Notify</div>
+      <div class="dialogTitle">{{title}}}</div>
       <div class="mt-1 mb-4 signInDivider"></div>
       <div class="dialogSubTitle">{{message}}</div>
       <v-row justify="end" class="mx-0 mt-5">
-        <v-btn small color="primary" @click="$emit('clickOk')">OK</v-btn>
+        <v-btn small color="primary" @click="$emit('confirmed', title)">Confirm</v-btn>
+        <v-btn small color="grey5" @click="onFlag = false">Close</v-btn>
       </v-row>
     </v-card>
   </v-dialog>
@@ -18,6 +19,10 @@ export default {
     onFlag: {
       type: Boolean,
       default: false,
+    },
+    title: {
+      type: String,
+      default: null,
     },
     message: {
       type: String,

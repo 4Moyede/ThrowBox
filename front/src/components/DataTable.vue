@@ -533,6 +533,7 @@ export default {
       }
       return 'file';
     },
+    //
     notifyClickOk() {
       this.resultDialog = false;
       this.uploadProgress = false;

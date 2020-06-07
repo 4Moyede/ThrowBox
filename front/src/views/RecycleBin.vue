@@ -73,7 +73,7 @@ export default {
           this.getFiles = r.data;
           this.dataLoading = false;
           for (let i = 0; i < this.getFiles.length; i += 1) {
-            if (!this.getFiles[i].isFile) {
+            if (!this.getFiles[i].isFile || this.getFiles[i].deletedDate === null) {
               this.getFiles.splice(i, 1);
             }
             // fid to Date
