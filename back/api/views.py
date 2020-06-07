@@ -91,14 +91,14 @@ class FileDownload(APIView):
         
         
 class FileErase(APIView):
-    def delete(self, request, format=None):
+    def post(self, request, format=None):
         checkdate = datetime.now() + timedelta(days = -30)
         quaryset = File.objects.filter(deletedDate__lt = checkdate)
-
-        s3 = boto3.client('s3', region_name = AWS_REGION)
-        keys_to_delete = [{'Key': object['fid']} for object in quaryset]
-        s3.delete_objects(Bucket = AWS_STORAGE_BUCKET_NAME, Delete={'Objects': keys_to_delete}) # s3에서 삭제
-
+        
+        s3 = boto3.client('s3')
+        for delfile in quaryset :
+            s3.delete_object(Bucket = AWS_STORAGE_BUCKET_NAME, Key=str(delfile.fid))
+    
         quaryset.delete()
         return Response(status = status.HTTP_200_OK)
         
