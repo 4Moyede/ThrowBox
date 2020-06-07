@@ -403,7 +403,7 @@ export default {
         this.uploadProgress = true;
         const formData = new FormData();
         formData.append('name', this.folderName);
-        formData.append('author', 'Tester');
+        formData.append('author', this.getUserName);
         formData.append('path', this.tableParams.path);
         formData.append('isFile', false);
         formData.append('fileSize', 0);
