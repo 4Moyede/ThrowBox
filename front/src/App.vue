@@ -123,7 +123,9 @@ export default {
         this.drawer = true;
       }
     },
-    logOut() {},
+    logOut() {
+      this.$store.dispatch('commitDelToken');
+    },
     enterSearch() {
       console.log(this.searchFile);
     },
