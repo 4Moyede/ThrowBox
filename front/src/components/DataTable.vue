@@ -131,7 +131,7 @@
                 <div class="createdDateStyle" style="text-align: end">{{item.createdDate}}</div>
               </td>
               <td>
-                <div class="fileSizeStyle" style="text-align: end">{{getfileSize}}</div>
+                <div class="fileSizeStyle" style="text-align: end">{{getfileSize(item.fileSize)}}</div>
               </td>
               <td v-if="currentPage.title !== 'Recycle bin'">
                 <div style="text-align: start">
@@ -209,7 +209,7 @@
               <div class="dialogSubtitle">Size</div>
             </v-col>
             <v-col cols="8">
-              <div class="dialogContents">{{getfileSize}}</div>
+              <div class="dialogContents">{{getfileSize(fileSpecific.fileSize)}}</div>
             </v-col>
           </v-row>
           <v-row class="mx-0 mt-4" justify="end" v-if="currentPage.title !== 'Recycle bin'">
@@ -324,12 +324,11 @@ export default {
     },
     // file size
     getfileSize() {
-      if (this.fileSpecific.fileSize === 0) {
-        return '';
-      }
       const s = ['bytes', 'kB', 'MB', 'GB', 'TB', 'PB'];
-      const e = Math.floor(Math.log(this.fileSpecific.fileSize) / Math.log(1024));
-      return `${(this.fileSpecific.fileSize / 1024 ** e).toFixed(2)} ${s[e]}`;
+      return (data) => {
+        if (data === 0) return '';
+        return `${(data / 1024 ** Math.floor(Math.log(data) / Math.log(1024))).toFixed(2)} ${s[Math.floor(Math.log(data) / Math.log(1024))]}`;
+      };
     },
   },
   methods: {
@@ -376,7 +375,7 @@ export default {
       for (let i = 0; i < files.length; i += 1) {
         formData.append('file', files[i]);
         formData.append('name', files[i].name);
-        formData.append('author', 'Tester');
+        formData.append('author', this.getUserName);
         formData.append('path', this.tableParams.path);
         formData.append('isFile', true);
         formData.append('fileSize', files[i].size);
@@ -445,11 +444,15 @@ export default {
         })
         .then((r) => {
           const link = document.createElement('a');
-          link.href = r.data.download_url;
-          link.download = r.data.download_url;
+          link.setAttribute('href', `data:text/plain;charset=utf-8,${encodeURIComponent(r.data.download_url)}`);
+          link.setAttribute('download', r.data.file_name);
+
+          link.style.display = 'none';
+          document.body.appendChild(link);
+
           link.click();
-          // window.location.assign(r.data.download_url);
-          console.log(r.data.download_url);
+
+          document.body.removeChild(link);
         })
         .catch((e) => {
           console.log(e.response);
@@ -462,7 +465,6 @@ export default {
       this.$axios
         .get('/fileTrash/', { file_id: data.fid })
         .then((r) => {
-          this.actionNotify = true;
           console.log(r);
         })
         .catch((e) => {
@@ -476,7 +478,6 @@ export default {
       this.$axios
         .get('/fileTrash/', { file_id: fid })
         .then((r) => {
-          this.actionNotify = true;
           console.log(r);
         })
         .catch((e) => {

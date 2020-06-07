@@ -257,9 +257,13 @@ export default {
         .post('/signIn/', this.LoginForm)
         .then((r) => {
           localStorage.setItem('accessToken', r.data.AccessToken);
+          return this.$axios.get('/userDetail');
+        })
+        .then((r2) => {
+          console.log(r2);
+          localStorage.setItem('userName', r2.data.ID);
           this.$store.dispatch('commitGetToken');
           this.$router.replace('/');
-          console.log(r);
         })
         .catch((e) => {
           console.log(e.response);
