@@ -257,7 +257,7 @@ export default {
         .post('/signIn/', this.LoginForm)
         .then((r) => {
           localStorage.setItem('accessToken', r.data.AccessToken);
-          return this.$axios.get('/userDetail');
+          return this.$axios.get('/userDetail/', { headers: { AccessToken: r.data.AccessToken } });
         })
         .then((r2) => {
           console.log(r2);
@@ -267,6 +267,8 @@ export default {
         })
         .catch((e) => {
           console.log(e.response);
+          localStorage.removeItem('accessToken');
+
           this.resultDialog = true;
           this.rtMsg = e.response.data.error;
         });
