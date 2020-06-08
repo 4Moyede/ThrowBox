@@ -7,12 +7,13 @@ from api.serializers import FileSerializer
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
+import django.core.exceptions#예외처리 위해서 추가 
 
 import boto3
 from boto3.session import Session
 from src.settings import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, AWS_REGION
 from bson import ObjectId
-
+from datetime import datetime, timedelta
 class FileList(APIView):
     def get(self, request, format=None):
         path = request.GET.get('path', None)
@@ -77,12 +78,16 @@ class FileDownload(APIView):
         download_url = "https://throwbox.s3.ap-northeast-2.amazonaws.com/" + request.GET.get('fid', None)
         res = { 'download_url': download_url }
         return Response(res)
+
+
 class fileTrash(APIView):
     #즐겨찾기 삭제 추가할 것. 
     def post(self,request,format=None):#requset data->fid, deletedDate
         #.exist() 함수를 사용하면 결과값이 있는지 없는지 확인 할 수 있지만, 결과값이 없더라도 문제가 생길 수 있으므로 일단 try catch 처리
         try:
-            File.objects.filter(fid= ObjectId(request.data['file_id'])).update(deletedDate=request.data['deletedDate'])
+            File.objects.filter(fid= ObjectId(request.data['fid'])).update(deletedDate=datetime.now())
+        except django.core.exceptions.ObjectDoesNotExist:
+            return Response({'error: "Invalid Fid"'},status=status.HTTP_400_BAD_REQUEST)
         except:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_200_OK)
@@ -91,7 +96,9 @@ class fileRecovery(APIView):#request data->fid
     #복구되는 디렉토리가 삭제 될 경우 해당 파일도 삭제 될 것으로 예상
     def post(self, request, format=None):
         try:
-            File.objects.filter(fid= ObjectId(request.data['file_id'])).update(deletedDate=None)
+            File.objects.filter(fid= ObjectId(request.data['fid'])).update(deletedDate=None)
+        except django.core.exceptions.ObjectDoesNotExist:
+            return Response({'error: "Invalid Fid"'},status=status.HTTP_400_BAD_REQUEST)
         except:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_200_OK)
