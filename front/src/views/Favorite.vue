@@ -33,8 +33,9 @@ export default {
       getFiles: [],
       dataLoading: true,
       params: {
-        path: 'root',
+        path: '',
         search: '',
+        starred: 'True',
       },
       StoragePage: {
         isRecent: false,
@@ -68,7 +69,7 @@ export default {
     requestFiles(param) {
       if (param !== undefined) { this.params = param; }
       this.$axios
-        .get('/fileList/', { params: this.params })
+        .get('/fileStarred/', { params: this.params })
         .then((r) => {
           this.getFiles = r.data;
           this.dataLoading = false;
@@ -76,16 +77,6 @@ export default {
             if (!this.getFiles[i].isFile) {
               this.getFiles[i].name = ` ${this.getFiles[i].name}`;
             }
-            // fid to Date
-            // Favorite 초기
-            // for (let j = 0; j < this.getFiles[i].favorite.length; j += 1) {
-            //   const favAuthor = this.getFiles[i].favorite[j];
-            //   if (favAuthor === this.userInfo.id) {
-            //     this.getFiles[i].isFavorite = true;
-            //   } else {
-            //     this.getFiles[i].isFavorite = false;
-            //   }
-            // }
           }
         })
         .catch((e) => {

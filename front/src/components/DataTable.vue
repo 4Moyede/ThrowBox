@@ -135,12 +135,13 @@
               </td>
               <td v-if="currentPage.title !== 'Recycle bin'">
                 <div style="text-align: start">
-                  <!-- <v-btn @click="clickStar(item)" class="ml-n7" icon color="primary">
-                    <v-icon>mdi-star</v-icon>
-                  </v-btn> -->
+                  <a @click="clickStar(item)" class="ml-n6">
+                    <v-icon v-if="item.starred" color="primary">mdi-star</v-icon>
+                    <v-icon v-else >mdi-star</v-icon>
+                  </a>
                   <v-menu transition="slide-y-transition" bottom>
                     <template v-slot:activator="{ on }">
-                      <v-btn icon class="ml-n6" v-on="on">
+                      <v-btn icon class="ml-n1" v-on="on">
                         <v-icon>mdi-dots-vertical</v-icon>
                       </v-btn>
                     </template>
@@ -308,7 +309,6 @@ export default {
     if (this.currentPage.title === 'Storage') {
       this.pathArray.push({ name: 'root', path: this.tableParams.path });
     }
-    console.log(this.pathArray);
   },
   computed: {
     ...mapGetters({
@@ -364,19 +364,16 @@ export default {
 
     // 파일 업로드 관련 drag & drop
     onDrop(event) {
-      this.uploadFile(event.dataTransfer.files);
+      if (this.currentPage.title === 'Storage') { this.uploadFile(event.dataTransfer.files); }
     },
     clickUploadButton() {
       this.$refs.fileInput.click();
     },
     onFileChange(event) {
-      console.log(this.tableParams.path);
-
       this.uploadFile(event.target.files);
     },
     // 파일 업로드
     uploadFile(files) {
-      console.log(this.getUserName);
       this.uploadProgress = true;
       const formData = new FormData();
       for (let i = 0; i < files.length; i += 1) {
@@ -419,7 +416,6 @@ export default {
             headers: { 'Content-Type': 'multipart/form-data' },
           })
           .then((r) => {
-            console.log(r);
             this.uploadProgress = false;
             this.folderName = '';
             this.addFolderDialog = false;
@@ -436,7 +432,6 @@ export default {
     clickFile(data) {
       if (data.isFile) {
         this.fileSpecific = data;
-        console.log(this.fileSpecific);
         this.fileSpecificDialog = true;
       } else {
         this.onClickFolder(data);
@@ -500,11 +495,21 @@ export default {
     },
     // 즐겨찾기
     clickStar(data) {
-      if (data.isFavorite) {
-        console.log(1);
-      } else {
-        console.log(2);
-      }
+      this.$axios
+        .post('/fileStarred/', { fid: data.fid, starred: !data.starred })
+        .then(() => {
+          this.$emit('loadFiles');
+          this.loadedFiles.forEach((element, index) => {
+            if (this.loadedFiles[index].fid === data.fid) {
+              this.loadedFiles[index].starred = data.starred;
+            }
+          });
+        })
+        .catch((e) => {
+          console.log(e.response);
+          this.resultDialog = true;
+          this.rtMsg = e.response.data.error;
+        });
     },
     // 파일 포맷에 맞는 아이콘 설정
     checkFileFormat(format) {
