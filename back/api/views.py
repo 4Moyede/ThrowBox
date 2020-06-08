@@ -85,11 +85,10 @@ class fileTrash(APIView):
     def post(self,request,format=None):#requset data->fid, deletedDate
         #.exist() 함수를 사용하면 결과값이 있는지 없는지 확인 할 수 있지만, 결과값이 없더라도 문제가 생길 수 있으므로 일단 try catch 처리
         try:
-            File.objects.filter(fid= ObjectId(request.data['fid'])).update(deletedDate=datetime.now())
+            #File.objects.filter(fid= ObjectId(request.data['fid'])).update(deletedDate=datetime.now())
+            File.objects.filter(fid= ObjectId(request.data['fid'])).update(deletedDate=datetime.now(), starred=False)
         except django.core.exceptions.ObjectDoesNotExist:
             return Response({'error: "Invalid Fid"'},status=status.HTTP_400_BAD_REQUEST)
-        except:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_200_OK)
 
 class fileRecovery(APIView):#request data->fid
