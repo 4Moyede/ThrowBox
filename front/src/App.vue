@@ -110,6 +110,11 @@ export default {
       this.drawer = true;
     }
   },
+  watch: {
+    getToken() {
+      this.drawer = true;
+    },
+  },
   computed: {
     ...mapGetters({
       getToken: 'getAccessToken',
