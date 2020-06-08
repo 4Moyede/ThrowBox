@@ -1,7 +1,7 @@
 <template>
   <v-app id="inspire">
     <v-app-bar elevation="1" flat fixed>
-      <v-btn v-if="isLogin" icon color="secondary" @click="clickDrawer">
+      <v-btn v-if="getToken" icon color="secondary" @click="clickDrawer">
         <v-icon>mdi-menu</v-icon>
       </v-btn>
       <v-btn v-else icon color="secondary" style="margin-right: -20px">
@@ -10,7 +10,7 @@
       <v-toolbar-title style="color: #3F51B5">ThrowBox</v-toolbar-title>
 
       <v-text-field
-        v-if="isLogin"
+        v-if="getToken"
         v-model="searchFile"
         style="max-width: 600px; margin-left: 95px"
         prepend-inner-icon="mdi-magnify"
@@ -29,7 +29,7 @@
       <v-btn v-if="$vuetify.breakpoint.xs" icon color="#3F51B5">
         <v-icon>mdi-magnify</v-icon>
       </v-btn>
-      <div v-if="isLogin">
+      <div v-if="getToken">
         <v-btn @click="logOut()" icon color="#3F51B5">
           <v-icon>mdi-account-arrow-right</v-icon>
         </v-btn>
@@ -54,7 +54,7 @@
       </div>
     </v-app-bar>
 
-    <v-navigation-drawer v-model="drawer" v-if="isLogin" app absolute>
+    <v-navigation-drawer v-model="drawer" v-if="getToken" app absolute>
       <v-list style="margin-top: 60px">
         <v-list-item-group color="secondary" v-model="navIndex">
           <v-list-item v-for="(item, i) in navMenu" :key="i" :to="item.to">
@@ -86,6 +86,8 @@
 </template>
 
 <script>
+import { mapGetters } from 'vuex';
+
 export default {
   data() {
     return {
@@ -98,16 +100,20 @@ export default {
         { text: 'Recycle Bin', icon: 'mdi-delete', to: { path: '/bin' } },
       ],
       searchFile: '',
-      isLogin: false,
     };
   },
   created() {
-    if (!this.$store.getters.getAccessToken) {
+    if (!this.getToken) {
       this.drawer = false;
+      this.$router.push('/login');
     } else {
       this.drawer = true;
-      this.isLogin = true;
     }
+  },
+  computed: {
+    ...mapGetters({
+      getToken: 'getAccessToken',
+    }),
   },
   methods: {
     clickDrawer() {

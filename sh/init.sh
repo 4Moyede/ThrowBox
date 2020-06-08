@@ -4,8 +4,10 @@ npm install
 npm run build
 
 cd ../backend
+python -m venv env
 . env/bin/activate
 pip install -r requirements.txt
+
 rm -rf static
 ./manage.py collectstatic
 rm -rf static/admin
