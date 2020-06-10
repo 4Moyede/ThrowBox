@@ -132,7 +132,6 @@ export default {
       this.$store.dispatch('commitDelToken');
     },
     enterSearch() {
-      console.log(this.searchFile);
     },
   },
 };
