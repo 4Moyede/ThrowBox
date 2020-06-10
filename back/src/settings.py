@@ -202,7 +202,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'djongo',
         'ENFORCE_SCHEMA': False,
-        'NAME':db_dbName ,
+        'NAME': db_dbName,
         'CLIENT': {
             'host': db_host,
             'port': db_port,
