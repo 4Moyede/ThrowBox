@@ -16,4 +16,5 @@ urlpatterns = [
     path('fileErase/', views.FileErase.as_view()),
     path('fileStarred/', views.FileStarred.as_view()),
     path('fileTrash/',views.fileTrash.as_view()),
+    path('fileRecovery/',views.fileRecovery.as_view()),
 ]
