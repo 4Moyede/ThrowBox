@@ -352,7 +352,7 @@ class FileErase(APIView):
         
         s3 = boto3.client('s3')
         for delfile in quaryset :
-            s3.delete_object(Bucket = AWS_STORAGE_BUCKET_NAME, Key=str(delfile.fid))
+            s3.delete_object(Bucket = S3_STORAGE_BUCKET_NAME, Key=str(delfile.fid))
     
         quaryset.delete()
         return Response(status = status.HTTP_200_OK)
