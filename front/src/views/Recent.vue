@@ -82,16 +82,6 @@ export default {
             if (!this.getFiles[i].isFile) {
               this.getFiles.splice(i, 1);
             }
-            // fid to Date
-            // Favorite 초기
-            // for (let j = 0; j < this.getFiles[i].favorite.length; j += 1) {
-            //   const favAuthor = this.getFiles[i].favorite[j];
-            //   if (favAuthor === this.userInfo.id) {
-            //     this.getFiles[i].isFavorite = true;
-            //   } else {
-            //     this.getFiles[i].isFavorite = false;
-            //   }
-            // }
           }
         })
         .catch((e) => {
