@@ -364,6 +364,8 @@ class FileErase(APIView):
         
             quaryset.delete()
             return Response(status = status.HTTP_200_OK)
+        except (KeyError, django.core.exceptions.ObjectDoesNotExist):
+            return Response({ 'error': 'No Required Parameter' }, status=status.HTTP_400_BAD_REQUEST)
         except cognito.exceptions.NotAuthorizedException:
             return Response({ 'error': 'Not Authorized' }, status=status.HTTP_401_UNAUTHORIZED)
         except cognito.exceptions.UserNotFoundException:
@@ -390,6 +392,8 @@ class FileStarred(APIView) :
             queryset = File.objects.filter(starred=starred)
             serializer = FileSerializer(queryset, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
+        except (KeyError, django.core.exceptions.ObjectDoesNotExist):
+            return Response({ 'error': 'No Required Parameter' }, status=status.HTTP_400_BAD_REQUEST)
         except cognito.exceptions.NotAuthorizedException:
             return Response({ 'error': 'Not Authorized' }, status=status.HTTP_401_UNAUTHORIZED)
         except cognito.exceptions.UserNotFoundException:
@@ -414,6 +418,8 @@ class FileStarred(APIView) :
             queryset = File.objects.filter(fid = request_fid)
             queryset.update(starred = request.data['starred'])
             return Response(status = status.HTTP_200_OK)
+        except (KeyError, django.core.exceptions.ObjectDoesNotExist):
+            return Response({ 'error': 'No Required Parameter' }, status=status.HTTP_400_BAD_REQUEST)
         except cognito.exceptions.NotAuthorizedException:
             return Response({ 'error': 'Not Authorized' }, status=status.HTTP_401_UNAUTHORIZED)
         except cognito.exceptions.UserNotFoundException:
@@ -432,8 +438,8 @@ class fileTrash(APIView):
             user = cognito.get_user(AccessToken=request.headers['AccessToken'])
             File.objects.filter(fid= ObjectId(request.data['fid'])).update(deletedDate=datetime.now(), starred=False)
             return Response(status=status.HTTP_200_OK)
-        except django.core.exceptions.ObjectDoesNotExist:
-            return Response({'error: "Invalid Fid"'},status=status.HTTP_400_BAD_REQUEST)
+        except (KeyError, django.core.exceptions.ObjectDoesNotExist):
+            return Response({ 'error': 'No Required Parameter' }, status=status.HTTP_400_BAD_REQUEST)
         except cognito.exceptions.NotAuthorizedException:
             return Response({ 'error': 'Not Authorized' }, status=status.HTTP_401_UNAUTHORIZED)
         except cognito.exceptions.UserNotFoundException:
@@ -451,8 +457,66 @@ class fileRecovery(APIView):
                 raise cognito.exceptions.NotAuthorizedException
             File.objects.filter(fid= ObjectId(request.data['fid'])).update(deletedDate=None)
             return Response(status=status.HTTP_200_OK)
-        except django.core.exceptions.ObjectDoesNotExist:
-            return Response({'error: "Invalid Fid"'},status=status.HTTP_400_BAD_REQUEST)
+        except (KeyError, django.core.exceptions.ObjectDoesNotExist):
+            return Response({ 'error': 'No Required Parameter' }, status=status.HTTP_400_BAD_REQUEST)
+        except cognito.exceptions.NotAuthorizedException:
+            return Response({ 'error': 'Not Authorized' }, status=status.HTTP_401_UNAUTHORIZED)
+        except cognito.exceptions.UserNotFoundException:
+            return Response({ 'error': 'User Not Found' }, status=status.HTTP_404_NOT_FOUND)
+        except cognito.exceptions.UserNotConfirmedException:
+            return Response({ 'error': 'User Not Confirmed' }, status=status.HTTP_406_NOT_ACCEPTABLE)
+
+
+class fileRename(APIView):
+    def checkDuplicate(self, name, path):
+        idx = 1
+        dot = name.rfind('.')
+        file_name = name[:dot]
+        file_ext = name[dot:]
+
+        queryset = File.objects.filter(name=name, path=path)
+        while queryset.values_list(): 
+            name = file_name + " (" + str(idx) + ")" + file_ext
+            idx += 1
+            queryset = File.objects.filter(name=name, path=path)
+        
+        return name
+
+    def put(self, request, format=None): 
+        session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
+        cognito = session.client("cognito-idp")
+        print(request.data['file_id'],request.data['name'])
+        try:
+            if not 'AccessToken' in request.headers.keys():
+                raise cognito.exceptions.NotAuthorizedException
+            user = cognito.get_user(AccessToken=request.headers['AccessToken'])
+            File.objects.filter(fid=ObjectId(request.data['file_id'])).update(name=self.checkDuplicate(request.data['name'], request.data['path']))
+            if request.data['name']== "" or request.data['name'].strip() =="":
+                return Response({ 'error': 'File name must exist' },status = status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response(status=status.HTTP_200_OK)
+        except (KeyError, django.core.exceptions.ObjectDoesNotExist):
+            return Response({ 'error': 'No Required Parameter' }, status=status.HTTP_400_BAD_REQUEST)
+        except cognito.exceptions.NotAuthorizedException:
+            return Response({ 'error': 'Not Authorized' }, status=status.HTTP_401_UNAUTHORIZED)
+        except cognito.exceptions.UserNotFoundException:
+            return Response({ 'error': 'User Not Found' }, status=status.HTTP_404_NOT_FOUND)
+        except cognito.exceptions.UserNotConfirmedException:
+            return Response({ 'error': 'User Not Confirmed' }, status=status.HTTP_406_NOT_ACCEPTABLE)
+        
+
+class fileMove(APIView):
+    def put(self, request, format=None):
+        session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
+        cognito = session.client("cognito-idp")
+        try:
+            if not 'AccessToken' in request.headers.keys():
+                raise cognito.exceptions.NotAuthorizedException
+            user = cognito.get_user(AccessToken=request.headers['AccessToken'])
+            File.objects.filter(fid= ObjectId(request.data['file_id'])).update(path=request.data['path'])
+            return Response(status=status.HTTP_200_OK)
+        except (KeyError, django.core.exceptions.ObjectDoesNotExist):
+            return Response({ 'error': 'No Required Parameter' }, status=status.HTTP_400_BAD_REQUEST)
         except cognito.exceptions.NotAuthorizedException:
             return Response({ 'error': 'Not Authorized' }, status=status.HTTP_401_UNAUTHORIZED)
         except cognito.exceptions.UserNotFoundException:
