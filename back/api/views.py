@@ -258,6 +258,7 @@ class FileUpload(APIView):
                 uploadedFile['isFile'] = request.data.getlist('isFile')[idx]
                 uploadedFile['author'] = request.data.getlist('author')[idx]
                 uploadedFile['fileSize'] = request.data.getlist('fileSize')[idx]
+                
 
                 serializer = FileSerializer(data=uploadedFile)
                 if serializer.is_valid():
