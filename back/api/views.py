@@ -124,7 +124,7 @@ class UserDetail(APIView):
             session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
             cognito = session.client("cognito-idp")
 
-            if not request.headers['AccessToken']:
+            if not 'AccessToken' in request.headers.keys():
                 raise cognito.exceptions.NotAuthorizedException
             user = cognito.get_user(AccessToken=request.headers['AccessToken'])
             userDetail = {
@@ -149,7 +149,7 @@ class UserModify(APIView):
         cognito = session.client("cognito-idp")
         
         try:
-            if not request.headers['AccessToken']:
+            if not 'AccessToken' in request.headers.keys():
                 raise cognito.exceptions.NotAuthorizedException
             if request.data['attribute'] == 'password':
                 cognito.change_password(
@@ -173,7 +173,7 @@ class UserDelete(APIView):
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
         try:
-            if not request.headers['AccessToken']:
+            if not 'AccessToken' in request.headers.keys():
                 raise cognito.exceptions.NotAuthorizedException
             cognito.delete_user(AccessToken=request.headers['AccessToken'])
             return Response(status=status.HTTP_200_OK)
@@ -194,7 +194,7 @@ class FileList(APIView):
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
         try:
-            if not request.headers['AccessToken']:
+            if not 'AccessToken' in request.headers.keys():
                 raise cognito.exceptions.NotAuthorizedException
             user = cognito.get_user(AccessToken=request.headers['AccessToken'])
             path = request.GET.get('path', None)
@@ -238,7 +238,7 @@ class FileUpload(APIView):
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
         try:
-            if not request.headers['AccessToken']:
+            if not 'AccessToken' in request.headers.keys():
                 raise cognito.exceptions.NotAuthorizedException
             user = cognito.get_user(AccessToken=request.headers['AccessToken'])
             uploadedList = []
@@ -288,7 +288,7 @@ class FolderUpload(APIView):
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
         try:
-            if not request.headers['AccessToken']:
+            if not 'AccessToken' in request.headers.keys():
                 raise cognito.exceptions.NotAuthorizedException
             user = cognito.get_user(AccessToken=request.headers['AccessToken'])
             dir_path = request.data['path']
@@ -326,7 +326,7 @@ class FileDownload(APIView):
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
         try:
-            if not request.headers['AccessToken']:
+            if not 'AccessToken' in request.headers.keys():
                 raise cognito.exceptions.NotAuthorizedException
             cognito.get_user(AccessToken=request.headers['AccessToken'])
             request_fid = request.GET.get('fid', None)
@@ -352,7 +352,7 @@ class FileErase(APIView):
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
         try:
-            if not request.headers['AccessToken']:
+            if not 'AccessToken' in request.headers.keys():
                 raise cognito.exceptions.NotAuthorizedException
             cognito.get_user(AccessToken=request.headers['AccessToken'])
             checkdate = datetime.now() + timedelta(days = -30)
@@ -377,7 +377,7 @@ class FileStarred(APIView) :
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
         try:
-            if not request.headers['AccessToken']:
+            if not 'AccessToken' in request.headers.keys():
                 raise cognito.exceptions.NotAuthorizedException
             user = cognito.get_user(AccessToken=request.headers['AccessToken'])
             starred = request.GET.get('starred', None)
@@ -401,7 +401,7 @@ class FileStarred(APIView) :
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
         try:
-            if not request.headers['AccessToken']:
+            if not 'AccessToken' in request.headers.keys():
                 raise cognito.exceptions.NotAuthorizedException
             user = cognito.get_user(AccessToken=request.headers['AccessToken'])
             request_fid = request.data['fid']
@@ -427,7 +427,7 @@ class fileTrash(APIView):
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
         try:
-            if not request.headers['AccessToken']:
+            if not 'AccessToken' in request.headers.keys():
                 raise cognito.exceptions.NotAuthorizedException
             user = cognito.get_user(AccessToken=request.headers['AccessToken'])
             File.objects.filter(fid= ObjectId(request.data['fid'])).update(deletedDate=datetime.now(), starred=False)
@@ -447,7 +447,7 @@ class fileRecovery(APIView):
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
         try:
-            if not request.headers['AccessToken']:
+            if not 'AccessToken' in request.headers.keys():
                 raise cognito.exceptions.NotAuthorizedException
             File.objects.filter(fid= ObjectId(request.data['fid'])).update(deletedDate=None)
             return Response(status=status.HTTP_200_OK)
