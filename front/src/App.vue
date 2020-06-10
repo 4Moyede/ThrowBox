@@ -123,7 +123,7 @@ export default {
     getfileSize() {
       return (data) => {
         if (data === 0) return '';
-        return (data / 1024 ** 3).toFixed(0);
+        return (data / 1024 ** 3).toFixed(1);
       };
     },
   },
