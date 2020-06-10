@@ -86,7 +86,8 @@ export default {
           params: this.params,
         })
         .then((r) => {
-          this.getFiles = r.data;
+          this.$store.dispatch('commitTotalFileSize', r.data.totalSize);
+          this.getFiles = r.data.fileList;
           this.dataLoading = false;
 
           for (let i = 0; i < this.getFiles.length; i += 1) {

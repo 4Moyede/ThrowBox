@@ -491,6 +491,19 @@ export default {
     },
     // 이름 변경
     renameFile(data) {
+      this.$axios
+        .get('/fileRename/', { file_id: data.fid, name: data.name, path: data.path })
+        .then((r) => {
+          this.$emit('loadFiles');
+          console.log(r);
+        })
+        .catch((e) => {
+          console.log(e.response);
+          this.resultDialog = true;
+          this.rtMsg = e.response.data.error;
+        });
+    },
+    updateFilePath(data) {
       console.log(data);
     },
     // 즐겨찾기

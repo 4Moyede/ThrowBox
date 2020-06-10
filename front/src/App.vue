@@ -72,8 +72,8 @@
       <v-icon class="ml-4 mt-4">mdi-server</v-icon>
       <div class="mt-n6 mr-4" style="margin-left: 71px">
         <div class="mb-2">Capacity</div>
-        <v-progress-linear color="info" height="10" value="40" striped></v-progress-linear>
-        <div style="font-size: 14px" class="mt-2">Total 100GB, 40GB used</div>
+        <v-progress-linear color="info" height="10" :value="getfileSize(this.getTotalFileSize)/50" striped></v-progress-linear>
+        <div style="font-size: 14px" class="mt-2">Total 50GB, {{getfileSize(this.getTotalFileSize)}}GB used</div>
       </div>
     </v-navigation-drawer>
 
@@ -118,7 +118,14 @@ export default {
   computed: {
     ...mapGetters({
       getToken: 'getAccessToken',
+      getTotalFileSize: 'getTotalFileSize',
     }),
+    getfileSize() {
+      return (data) => {
+        if (data === 0) return '';
+        return (data / 1024 ** 3).toFixed(1);
+      };
+    },
   },
   methods: {
     clickDrawer() {
@@ -132,7 +139,6 @@ export default {
       this.$store.dispatch('commitDelToken');
     },
     enterSearch() {
-      console.log(this.searchFile);
     },
   },
 };
