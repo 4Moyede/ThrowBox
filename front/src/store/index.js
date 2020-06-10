@@ -10,6 +10,7 @@ export default new Vuex.Store({
       userName: localStorage.getItem('userName'),
       profileIMG: localStorage.getItem('profileIMG'),
     },
+    totalFileSize: null,
   },
   mutations: {
     getToken(state) {
@@ -26,15 +27,20 @@ export default new Vuex.Store({
       state.userInfo.profileIMG = null;
       window.location.replace('/signin');
     },
+    loadTotalFileSize(state, data) {
+      state.totalFileSize = data;
+    },
   },
   getters: {
     getAccessToken: (state) => state.userInfo.accessToken,
     getUserName: (state) => state.userInfo.userName,
     getProfileIMG: (state) => state.userInfo.profileIMG,
+    getTotalFileSize: (state) => state.totalFileSize,
   },
   actions: {
     commitGetToken: (context) => context.commit('getToken'),
     commitDelToken: (context) => context.commit('delToken'),
+    commitTotalFileSize: (context, data) => context.commit('loadTotalFileSize', data),
   },
   modules: {
   },
