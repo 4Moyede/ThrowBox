@@ -541,6 +541,7 @@ export default {
         fileFormat === 'mp4'
         || fileFormat === 'avi'
         || fileFormat === 'mkv'
+        || fileFormat === 'mov'
       ) {
         return 'video';
       }

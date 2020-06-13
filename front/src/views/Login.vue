@@ -256,6 +256,7 @@ export default {
       this.$axios
         .post('/signIn/', this.LoginForm)
         .then((r) => {
+          console.log(r);
           localStorage.setItem('accessToken', r.data.AccessToken);
           return this.$axios.get('/userDetail/', { headers: { AccessToken: r.data.AccessToken } });
         })
@@ -297,7 +298,7 @@ export default {
           this.rtMsg = 'You have Successfully signed up ThrowBox!';
         })
         .catch((e) => {
-          console.log(e);
+          console.log(e.response);
           this.resultDialog = true;
 
           this.rtMsg = e.response.data.error;
