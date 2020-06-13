@@ -124,7 +124,7 @@ class UserDetail(APIView):
             session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
             cognito = session.client("cognito-idp")
 
-            if not request.headers['AccessToken']:
+            if not 'AccessToken' in request.headers.keys():
                 raise cognito.exceptions.NotAuthorizedException
             user = cognito.get_user(AccessToken=request.headers['AccessToken'])
             userDetail = {
@@ -149,7 +149,7 @@ class UserModify(APIView):
         cognito = session.client("cognito-idp")
         
         try:
-            if not request.headers['AccessToken']:
+            if not 'AccessToken' in request.headers.keys():
                 raise cognito.exceptions.NotAuthorizedException
             if request.data['attribute'] == 'password':
                 cognito.change_password(
@@ -173,7 +173,7 @@ class UserDelete(APIView):
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
         try:
-            if not request.headers['AccessToken']:
+            if not 'AccessToken' in request.headers.keys():
                 raise cognito.exceptions.NotAuthorizedException
             cognito.delete_user(AccessToken=request.headers['AccessToken'])
             return Response(status=status.HTTP_200_OK)
@@ -194,7 +194,7 @@ class FileList(APIView):
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
         try:
-            if not request.headers['AccessToken']:
+            if not 'AccessToken' in request.headers.keys():
                 raise cognito.exceptions.NotAuthorizedException
             user = cognito.get_user(AccessToken=request.headers['AccessToken'])
             path = request.GET.get('path', None)
@@ -238,7 +238,7 @@ class FileUpload(APIView):
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
         try:
-            if not request.headers['AccessToken']:
+            if not 'AccessToken' in request.headers.keys():
                 raise cognito.exceptions.NotAuthorizedException
             user = cognito.get_user(AccessToken=request.headers['AccessToken'])
             uploadedList = []
@@ -288,7 +288,7 @@ class FolderUpload(APIView):
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
         try:
-            if not request.headers['AccessToken']:
+            if not 'AccessToken' in request.headers.keys():
                 raise cognito.exceptions.NotAuthorizedException
             user = cognito.get_user(AccessToken=request.headers['AccessToken'])
             dir_path = request.data['path']
@@ -326,7 +326,7 @@ class FileDownload(APIView):
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
         try:
-            if not request.headers['AccessToken']:
+            if not 'AccessToken' in request.headers.keys():
                 raise cognito.exceptions.NotAuthorizedException
             cognito.get_user(AccessToken=request.headers['AccessToken'])
             request_fid = request.GET.get('fid', None)
@@ -349,15 +349,29 @@ class FileDownload(APIView):
         
 class FileErase(APIView):
     def post(self, request, format=None):
-        checkdate = datetime.now() + timedelta(days = -30)
-        quaryset = File.objects.filter(deletedDate__lt = checkdate)
+        session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
+        cognito = session.client("cognito-idp")
+        try:
+            if not 'AccessToken' in request.headers.keys():
+                raise cognito.exceptions.NotAuthorizedException
+            cognito.get_user(AccessToken=request.headers['AccessToken'])
+            checkdate = datetime.now() + timedelta(days = -30)
+            quaryset = File.objects.filter(deletedDate__lt = checkdate)
+            
+            s3 = boto3.client('s3')
+            for delfile in quaryset :
+                s3.delete_object(Bucket = S3_STORAGE_BUCKET_NAME, Key=str(delfile.fid))
         
-        s3 = boto3.client('s3')
-        for delfile in quaryset :
-            s3.delete_object(Bucket = S3_STORAGE_BUCKET_NAME, Key=str(delfile.fid))
-    
-        quaryset.delete()
-        return Response(status = status.HTTP_200_OK)
+            quaryset.delete()
+            return Response(status = status.HTTP_200_OK)
+        except (KeyError, django.core.exceptions.ObjectDoesNotExist):
+            return Response({ 'error': 'No Required Parameter' }, status=status.HTTP_400_BAD_REQUEST)
+        except cognito.exceptions.NotAuthorizedException:
+            return Response({ 'error': 'Not Authorized' }, status=status.HTTP_401_UNAUTHORIZED)
+        except cognito.exceptions.UserNotFoundException:
+            return Response({ 'error': 'User Not Found' }, status=status.HTTP_404_NOT_FOUND)
+        except cognito.exceptions.UserNotConfirmedException:
+            return Response({ 'error': 'User Not Confirmed' }, status=status.HTTP_406_NOT_ACCEPTABLE)
         
 
 class FileStarred(APIView) :
@@ -365,6 +379,8 @@ class FileStarred(APIView) :
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
         try:
+            if not 'AccessToken' in request.headers.keys():
+                raise cognito.exceptions.NotAuthorizedException
             user = cognito.get_user(AccessToken=request.headers['AccessToken'])
             starred = request.GET.get('starred', None)
             if not starred:
@@ -376,17 +392,21 @@ class FileStarred(APIView) :
             queryset = File.objects.filter(starred=starred)
             serializer = FileSerializer(queryset, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
-        except (KeyError, cognito.exceptions.NotAuthorizedException):
+        except (KeyError, django.core.exceptions.ObjectDoesNotExist):
+            return Response({ 'error': 'No Required Parameter' }, status=status.HTTP_400_BAD_REQUEST)
+        except cognito.exceptions.NotAuthorizedException:
             return Response({ 'error': 'Not Authorized' }, status=status.HTTP_401_UNAUTHORIZED)
-        except cognito.exceptions.UserNotConfirmedException:
-            return Response({ 'error': 'User Not Confirmed' }, status=status.HTTP_401_UNAUTHORIZED)
         except cognito.exceptions.UserNotFoundException:
-            return Response({ 'error': 'User Not Found' }, status=status.HTTP_400_BAD_REQUEST)
+            return Response({ 'error': 'User Not Found' }, status=status.HTTP_404_NOT_FOUND)
+        except cognito.exceptions.UserNotConfirmedException:
+            return Response({ 'error': 'User Not Confirmed' }, status=status.HTTP_406_NOT_ACCEPTABLE)
    
     def post(self, request, format = None) :
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
         try:
+            if not 'AccessToken' in request.headers.keys():
+                raise cognito.exceptions.NotAuthorizedException
             user = cognito.get_user(AccessToken=request.headers['AccessToken'])
             request_fid = request.data['fid']
             if not request_fid:
@@ -398,32 +418,108 @@ class FileStarred(APIView) :
             queryset = File.objects.filter(fid = request_fid)
             queryset.update(starred = request.data['starred'])
             return Response(status = status.HTTP_200_OK)
-        except (KeyError, cognito.exceptions.NotAuthorizedException):
+        except (KeyError, django.core.exceptions.ObjectDoesNotExist):
+            return Response({ 'error': 'No Required Parameter' }, status=status.HTTP_400_BAD_REQUEST)
+        except cognito.exceptions.NotAuthorizedException:
             return Response({ 'error': 'Not Authorized' }, status=status.HTTP_401_UNAUTHORIZED)
-        except cognito.exceptions.UserNotConfirmedException:
-            return Response({ 'error': 'User Not Confirmed' }, status=status.HTTP_401_UNAUTHORIZED)
         except cognito.exceptions.UserNotFoundException:
-            return Response({ 'error': 'User Not Found' }, status=status.HTTP_400_BAD_REQUEST)
+            return Response({ 'error': 'User Not Found' }, status=status.HTTP_404_NOT_FOUND)
+        except cognito.exceptions.UserNotConfirmedException:
+            return Response({ 'error': 'User Not Confirmed' }, status=status.HTTP_406_NOT_ACCEPTABLE)
 
 
 class fileTrash(APIView):
-    #즐겨찾기 삭제 추가할 것. 
-    def post(self,request,format=None):#requset data->fid, deletedDate
-        #.exist() 함수를 사용하면 결과값이 있는지 없는지 확인 할 수 있지만, 결과값이 없더라도 문제가 생길 수 있으므로 일단 try catch 처리
+    def post(self,request,format=None):
+        session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
+        cognito = session.client("cognito-idp")
         try:
-            #File.objects.filter(fid= ObjectId(request.data['fid'])).update(deletedDate=datetime.now())
+            if not 'AccessToken' in request.headers.keys():
+                raise cognito.exceptions.NotAuthorizedException
+            user = cognito.get_user(AccessToken=request.headers['AccessToken'])
             File.objects.filter(fid= ObjectId(request.data['fid'])).update(deletedDate=datetime.now(), starred=False)
-        except django.core.exceptions.ObjectDoesNotExist:
-            return Response({'error: "Invalid Fid"'},status=status.HTTP_400_BAD_REQUEST)
-        return Response(status=status.HTTP_200_OK)
+            return Response(status=status.HTTP_200_OK)
+        except (KeyError, django.core.exceptions.ObjectDoesNotExist):
+            return Response({ 'error': 'No Required Parameter' }, status=status.HTTP_400_BAD_REQUEST)
+        except cognito.exceptions.NotAuthorizedException:
+            return Response({ 'error': 'Not Authorized' }, status=status.HTTP_401_UNAUTHORIZED)
+        except cognito.exceptions.UserNotFoundException:
+            return Response({ 'error': 'User Not Found' }, status=status.HTTP_404_NOT_FOUND)
+        except cognito.exceptions.UserNotConfirmedException:
+            return Response({ 'error': 'User Not Confirmed' }, status=status.HTTP_406_NOT_ACCEPTABLE)
 
-class fileRecovery(APIView):#request data->fid
-    #복구되는 디렉토리가 삭제 될 경우 해당 파일도 삭제 될 것으로 예상
+
+class fileRecovery(APIView):
     def post(self, request, format=None):
+        session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
+        cognito = session.client("cognito-idp")
         try:
+            if not 'AccessToken' in request.headers.keys():
+                raise cognito.exceptions.NotAuthorizedException
             File.objects.filter(fid= ObjectId(request.data['fid'])).update(deletedDate=None)
-        except django.core.exceptions.ObjectDoesNotExist:
-            return Response({'error: "Invalid Fid"'},status=status.HTTP_400_BAD_REQUEST)
-        except:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        return Response(status=status.HTTP_200_OK)
+            return Response(status=status.HTTP_200_OK)
+        except (KeyError, django.core.exceptions.ObjectDoesNotExist):
+            return Response({ 'error': 'No Required Parameter' }, status=status.HTTP_400_BAD_REQUEST)
+        except cognito.exceptions.NotAuthorizedException:
+            return Response({ 'error': 'Not Authorized' }, status=status.HTTP_401_UNAUTHORIZED)
+        except cognito.exceptions.UserNotFoundException:
+            return Response({ 'error': 'User Not Found' }, status=status.HTTP_404_NOT_FOUND)
+        except cognito.exceptions.UserNotConfirmedException:
+            return Response({ 'error': 'User Not Confirmed' }, status=status.HTTP_406_NOT_ACCEPTABLE)
+
+
+class fileRename(APIView):
+    def checkDuplicate(self, name, path):
+        idx = 1
+        dot = name.rfind('.')
+        file_name = name[:dot]
+        file_ext = name[dot:]
+
+        queryset = File.objects.filter(name=name, path=path)
+        while queryset.values_list(): 
+            name = file_name + " (" + str(idx) + ")" + file_ext
+            idx += 1
+            queryset = File.objects.filter(name=name, path=path)
+        
+        return name
+
+    def put(self, request, format=None): 
+        session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
+        cognito = session.client("cognito-idp")
+        print(request.data['file_id'],request.data['name'])
+        try:
+            if not 'AccessToken' in request.headers.keys():
+                raise cognito.exceptions.NotAuthorizedException
+            user = cognito.get_user(AccessToken=request.headers['AccessToken'])
+            File.objects.filter(fid=ObjectId(request.data['file_id'])).update(name=self.checkDuplicate(request.data['name'], request.data['path']))
+            if request.data['name']== "" or request.data['name'].strip() =="":
+                return Response({ 'error': 'File name must exist' },status = status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response(status=status.HTTP_200_OK)
+        except (KeyError, django.core.exceptions.ObjectDoesNotExist):
+            return Response({ 'error': 'No Required Parameter' }, status=status.HTTP_400_BAD_REQUEST)
+        except cognito.exceptions.NotAuthorizedException:
+            return Response({ 'error': 'Not Authorized' }, status=status.HTTP_401_UNAUTHORIZED)
+        except cognito.exceptions.UserNotFoundException:
+            return Response({ 'error': 'User Not Found' }, status=status.HTTP_404_NOT_FOUND)
+        except cognito.exceptions.UserNotConfirmedException:
+            return Response({ 'error': 'User Not Confirmed' }, status=status.HTTP_406_NOT_ACCEPTABLE)
+        
+
+class fileMove(APIView):
+    def put(self, request, format=None):
+        session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
+        cognito = session.client("cognito-idp")
+        try:
+            if not 'AccessToken' in request.headers.keys():
+                raise cognito.exceptions.NotAuthorizedException
+            user = cognito.get_user(AccessToken=request.headers['AccessToken'])
+            File.objects.filter(fid= ObjectId(request.data['file_id'])).update(path=request.data['path'])
+            return Response(status=status.HTTP_200_OK)
+        except (KeyError, django.core.exceptions.ObjectDoesNotExist):
+            return Response({ 'error': 'No Required Parameter' }, status=status.HTTP_400_BAD_REQUEST)
+        except cognito.exceptions.NotAuthorizedException:
+            return Response({ 'error': 'Not Authorized' }, status=status.HTTP_401_UNAUTHORIZED)
+        except cognito.exceptions.UserNotFoundException:
+            return Response({ 'error': 'User Not Found' }, status=status.HTTP_404_NOT_FOUND)
+        except cognito.exceptions.UserNotConfirmedException:
+            return Response({ 'error': 'User Not Confirmed' }, status=status.HTTP_406_NOT_ACCEPTABLE)

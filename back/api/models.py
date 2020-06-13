@@ -9,4 +9,4 @@ class File(models.Model):
     path = models.TextField()
     fileSize = models.IntegerField()
     starred = models.BooleanField(default=False)
-    deletedDate = models.CharField(max_length=20, null=True)
+    deletedDate = models.DateTimeField(blank=True, null=True)

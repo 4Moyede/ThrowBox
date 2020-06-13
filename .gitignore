@@ -3,13 +3,12 @@
 .database_key
 node_modules
 /dist
-#vscode
+# vscode
 .vscode
 # local env files
 env
 
-migrations/
-/migrations
+api/migrations/
 run.sh
 runMig.sh
 # Log files
