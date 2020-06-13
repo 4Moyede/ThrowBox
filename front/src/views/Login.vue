@@ -40,18 +40,11 @@
                     :error-messages="errors"
                     clearable
                     filled
+                    @keydown.enter="Login()"
                     type="password"
                   ></v-text-field>
                 </ValidationProvider>
-                <v-row justify="end" class="mr-0 mt-n7 mb-7">
-                  <v-btn
-                    text
-                    color="secondary"
-                    style="font-weight: 400; text-transform: none"
-                    @click="findPassword()"
-                  >Forgot Password?</v-btn>
-                </v-row>
-                <v-row class="mx-0">
+                <v-row class="mx-0 mt-2">
                   <v-btn
                     color="secondary"
                     style="margin: auto"
@@ -256,14 +249,15 @@ export default {
       this.$axios
         .post('/signIn/', this.LoginForm)
         .then((r) => {
-          console.log(r);
           localStorage.setItem('accessToken', r.data.AccessToken);
           return this.$axios.get('/userDetail/', { headers: { AccessToken: r.data.AccessToken } });
         })
         .then((r2) => {
-          console.log(r2);
           localStorage.setItem('userName', r2.data.ID);
           this.$store.dispatch('commitGetToken');
+          return this.$axios.post('/fileErase/');
+        })
+        .then(() => {
           this.$router.replace('/');
         })
         .catch((e) => {
@@ -304,7 +298,6 @@ export default {
           this.rtMsg = e.response.data.error;
         });
     },
-    findPassword() {},
     notifyClickOk() {
       this.resultDialog = false;
       if (this.rtMsg === 'You have Successfully signed up ThrowBox!') {

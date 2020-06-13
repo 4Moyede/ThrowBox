@@ -54,8 +54,7 @@
         class="elevation-0"
         :search="search"
         item-key="name"
-        :sort-by="currentPage.sort"
-        :sort-desc="currentPage.isRecent"
+        :options="tableOption"
       >
         <!-- Top Setting -->
         <template v-slot:top>
@@ -107,7 +106,7 @@
         <!-- Table Body Setting -->
         <template v-slot:body="{ items }">
           <tbody>
-            <tr v-for="item in items" :key="item.name" @dblclick="clickFile(item)">
+            <tr v-for="item in items" :key="item.name" @dblclick="clickFile(item)" ref="eachFile">
               <td>
                 <v-row class="ml-n1">
                   <v-icon
@@ -139,7 +138,7 @@
                     <v-icon v-if="item.starred" color="primary">mdi-star</v-icon>
                     <v-icon v-else >mdi-star</v-icon>
                   </a>
-                  <v-menu transition="slide-y-transition" bottom>
+                  <v-menu transition="slide-y-transition" bottom v-if="currentPage.title==='Storage'">
                     <template v-slot:activator="{ on }">
                       <v-btn icon class="ml-n1" v-on="on">
                         <v-icon>mdi-dots-vertical</v-icon>
@@ -147,7 +146,10 @@
                     </template>
                     <v-list>
                       <v-list-item>
-                        <v-list-item-title @click="renameFile(item)">Rename</v-list-item-title>
+                        <v-list-item-title @click="renameForm.file_id = item.fid; renameDialog = true">Rename</v-list-item-title>
+                      </v-list-item>
+                      <v-list-item>
+                        <v-list-item-title @click="beforeClickChangePath(item)">Change Path</v-list-item-title>
                       </v-list-item>
                       <v-list-item>
                         <v-list-item-title @click="deleteFile(item)">Delete</v-list-item-title>
@@ -197,7 +199,7 @@
               <div class="dialogContents">{{convertDate(fileSpecific.fid)}}</div>
             </v-col>
           </v-row>
-          <v-row class="mt-n1 mx-0">
+          <v-row class="mt-n1 mx-0" v-if="currentPage.title === 'Storage'">
             <v-col cols="4">
               <div class="dialogSubtitle">Path</div>
             </v-col>
@@ -217,9 +219,6 @@
             <v-btn class="mr-3" color="secondary">
               <a @click.prevent="downloadFile(fileSpecific.fid)" style="color: #ffffff">Download</a>
             </v-btn>
-            <v-btn color="primary" class="mr-4">
-              <a style="color: #ffffff">Share</a>
-            </v-btn>
           </v-row>
           <v-row class="mx-0 mt-4" justify="end" v-else>
             <v-btn class="mr-4" color="secondary">
@@ -230,6 +229,64 @@
         </v-card>
       </v-dialog>
       <!--  -->
+
+      <v-dialog max-width="500" v-model="renameDialog">
+        <v-card max-width="500" outlined>
+          <div class="dialogTitle mt-3 ml-3">Rename File</div>
+          <v-divider class="mt-2 mb-5"></v-divider>
+          <ValidationObserver ref="obs" v-slot="{ invalid, validated}">
+            <ValidationProvider name="id" rules="required" v-slot="{ errors }">
+              <v-text-field class="mx-3"
+                color="secondary"
+                label="Name"
+                v-model="renameForm.name"
+                :error-messages="errors"
+                outlined
+                autofocus
+                type="text"
+                @keydown.enter="renameFile()"
+              ></v-text-field>
+            </ValidationProvider>
+            <v-row justify="end" class="mr-3 mb-3">
+              <v-btn
+                color="secondary"
+                @click="renameFile()"
+                :disabled="invalid || !validated"
+              >rename</v-btn>
+              <v-btn color="error" class="ml-3" @click="renameDialog=false">Cancel</v-btn>
+            </v-row>
+          </ValidationObserver>
+        </v-card>
+      </v-dialog>
+
+      <v-dialog max-width="500" v-model="moveDialog">
+        <v-card max-width="500" outlined>
+          <div class="dialogTitle mt-3 ml-3">Change FilePath</div>
+          <v-divider class="mt-2 mb-5"></v-divider>
+          <ValidationObserver ref="obs" v-slot="{ invalid, validated}">
+            <ValidationProvider name="id" rules="required" v-slot="{ errors }">
+              <v-select class="mx-3"
+                color="secondary"
+                label="Path"
+                :items="pathNameArray"
+                v-model="moveForm.path"
+                :error-messages="errors"
+                outlined
+                autofocus
+                type="text"
+              ></v-select>
+            </ValidationProvider>
+            <v-row justify="end" class="mr-3 mb-3">
+              <v-btn
+                color="secondary"
+                @click="updateFilePath()"
+                :disabled="invalid || !validated"
+              >Change</v-btn>
+              <v-btn color="error" class="ml-3" @click="moveDialog=false">Cancel</v-btn>
+            </v-row>
+          </ValidationObserver>
+        </v-card>
+      </v-dialog>
 
       <!-- Upload Button  -->
       <v-layout justify-center class="mt-8" v-if="currentPage.title==='Storage'">
@@ -249,8 +306,10 @@
 <script>
 /* eslint-disable no-underscore-dangle */
 // @ is an alias to /src
+
 import moment from 'moment';
 import { mapGetters } from 'vuex';
+import { ValidationProvider, ValidationObserver } from 'vee-validate';
 import Notify from './Notify.vue';
 
 export default {
@@ -285,11 +344,13 @@ export default {
       default: null,
     },
   },
-  components: { Notify },
+  components: { Notify, ValidationProvider, ValidationObserver },
   data() {
     return {
       folderName: '',
       pathArray: [],
+      pathNameArray: [],
+      pathStore: [],
       uploadForm: [],
       fileSpecific: {},
       // dialog
@@ -299,16 +360,34 @@ export default {
       actionNotify: false,
 
       resultDialog: false,
-      rtMsg: null,
 
+      rtMsg: null,
+      renameDialog: false,
+      renameForm: {
+        name: null,
+        file_id: null,
+        path: null,
+      },
+      moveDialog: false,
+      moveForm: {
+        file_id: null,
+        path: null,
+      },
+      tableOption: {
+        sortBy: [],
+        sortDesc: [],
+      },
       // pagination & params
     };
   },
   // 초기 path ui를 구성하기 위한 작업.
   created() {
+    console.log(this.currentPage);
     if (this.currentPage.title === 'Storage') {
       this.pathArray.push({ name: 'root', path: this.tableParams.path });
     }
+    this.tableOption.sortBy.push(this.currentPage.sort);
+    this.tableOption.sortDesc.push(this.currentPage.isRecent);
   },
   computed: {
     ...mapGetters({
@@ -350,9 +429,11 @@ export default {
         const element = this.pathArray[i];
         if (element.path === data.path) {
           this.pathArray = this.pathArray.slice(0, i + 1);
+          this.pathNameArray = this.pathNameArray.slice(0, i + 1);
           break;
         }
       }
+
       this.refreshData();
     },
     // 폴더 클릭 후 path 조정
@@ -388,11 +469,9 @@ export default {
         .post('/fileUpload/', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         })
-        .then((r) => {
+        .then(() => {
           this.uploadProgress = false;
-          for (let index = 0; index < r.data.length; index += 1) {
-            this.loadedFiles.push(r.data[index]);
-          }
+          this.refreshData();
         })
         .catch((e) => {
           console.log(e.response);
@@ -405,6 +484,7 @@ export default {
     uploadFolder() {
       if (this.folderName) {
         this.uploadProgress = true;
+        this.addFolderDialog = false;
         const formData = new FormData();
         formData.append('name', this.folderName);
         formData.append('author', this.getUserName);
@@ -415,11 +495,10 @@ export default {
           .post('/folderUpload/', formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
           })
-          .then((r) => {
+          .then(() => {
             this.uploadProgress = false;
             this.folderName = '';
-            this.addFolderDialog = false;
-            this.loadedFiles.push(r.data);
+            this.refreshData();
           })
           .catch((e) => {
             console.log(e.response);
@@ -439,6 +518,7 @@ export default {
     },
     // 파일 다운로드
     downloadFile(fileId) {
+      this.uploadProgress = true;
       this.$axios
         .get('/fileDownload/', {
           params: {
@@ -447,15 +527,13 @@ export default {
         })
         .then((r) => {
           const link = document.createElement('a');
-          link.setAttribute('href', `data:text/plain;charset=utf-8,${encodeURIComponent(r.data.download_url)}`);
-          link.setAttribute('download', r.data.file_name);
-
+          link.setAttribute('href', `data:text/plain;charset=utf-8,${encodeURIComponent(r.data.downloadUrl)}`);
+          link.setAttribute('download', r.data.fileName);
           link.style.display = 'none';
           document.body.appendChild(link);
-
           link.click();
-
           document.body.removeChild(link);
+          this.uploadProgress = false;
         })
         .catch((e) => {
           console.log(e.response);
@@ -465,13 +543,14 @@ export default {
     },
     // 파일 삭제
     deleteFile(data) {
+      this.uploadProgress = true;
       this.$axios
-        .get('/fileTrash/', { file_id: data.fid })
-        .then((r) => {
-          console.log(r);
+        .post('/fileTrash/', { fid: data.fid })
+        .then(() => {
+          this.$emit('loadFiles');
+          this.uploadProgress = false;
         })
         .catch((e) => {
-          console.log(e.response);
           this.resultDialog = true;
           this.rtMsg = e.response.data.error;
         });
@@ -479,20 +558,7 @@ export default {
     // 파일 복구
     recoverFile(fid) {
       this.$axios
-        .get('/fileTrash/', { file_id: fid })
-        .then((r) => {
-          console.log(r);
-        })
-        .catch((e) => {
-          console.log(e.response);
-          this.resultDialog = true;
-          this.rtMsg = e.response.data.error;
-        });
-    },
-    // 이름 변경
-    renameFile(data) {
-      this.$axios
-        .get('/fileRename/', { file_id: data.fid, name: data.name, path: data.path })
+        .get('/fileRecovery/', { fid })
         .then((r) => {
           this.$emit('loadFiles');
           console.log(r);
@@ -503,8 +569,68 @@ export default {
           this.rtMsg = e.response.data.error;
         });
     },
-    updateFilePath(data) {
-      console.log(data);
+    // 이름 변경
+    renameFile() {
+      this.uploadProgress = true;
+      this.renameDialog = false;
+      this.renameForm.path = this.tableParams.path;
+      this.$axios
+        .put('/fileRename/', this.renameForm)
+        .then(() => {
+          this.$emit('loadFiles');
+          this.uploadProgress = false;
+          this.renameForm.path = null;
+          this.renameForm.name = null;
+          this.renameForm.file_id = null;
+        })
+        .catch((e) => {
+          console.log(e.response);
+          this.resultDialog = true;
+          this.rtMsg = e.response.data.error;
+        });
+    },
+    beforeClickChangePath(item) {
+      this.pathNameArray = [];
+      this.pathStore = [];
+      this.pathStore = [];
+      this.moveForm.file_id = item.fid;
+      this.moveDialog = true;
+      this.pathArray.forEach((element) => {
+        this.pathNameArray.push(element.name);
+        this.pathStore.push(element);
+      });
+      this.moveForm.path = this.pathNameArray[this.pathNameArray.length - 1];
+      this.loadedFiles.forEach((element) => {
+        if (!element.isFile) {
+          this.pathNameArray.push(element.name);
+          this.pathStore.push({ name: element.name, path: element.fid });
+        }
+      });
+    },
+    updateFilePath() {
+      this.uploadProgress = true;
+      this.moveDialog = false;
+      this.pathStore.forEach((element) => {
+        if (this.moveForm.path === element.name) {
+          this.moveForm.path = element.path;
+        }
+      });
+      console.log(this.moveForm);
+      this.$axios
+        .put('/fileMove/', this.moveForm)
+        .then((r) => {
+          this.$emit('loadFiles');
+          this.uploadProgress = false;
+
+          this.moveForm.path = null;
+          this.moveForm.file_id = null;
+          console.log(r);
+        })
+        .catch((e) => {
+          console.log(e.response);
+          this.resultDialog = true;
+          this.rtMsg = e.response.data.error;
+        });
     },
     // 즐겨찾기
     clickStar(data) {

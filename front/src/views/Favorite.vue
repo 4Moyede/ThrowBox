@@ -44,7 +44,7 @@ export default {
       },
       headers: [
         { text: 'Name', value: 'name', align: 'start' },
-        { text: 'Created', value: 'createDate', align: 'end' },
+        { text: 'Created', value: 'fid', align: 'end' },
         { text: 'Size', value: 'fileSize', align: 'end' },
         { value: 'action', align: 'center', sortable: false },
       ],

@@ -46,7 +46,7 @@ export default {
           text: 'Name', value: 'name', align: 'start', sortable: false,
         },
         {
-          text: 'Created', value: 'createDate', align: 'end', sortable: false,
+          text: 'Created', value: 'fid', align: 'end', sortable: false,
         },
         {
           text: 'Size', value: 'fileSize', align: 'end', sortable: false,
@@ -56,33 +56,25 @@ export default {
     };
   },
   created() {
-    // this.loadUserInfo();
     this.requestFiles();
   },
   methods: {
-    // 데이터 로드
-    loadUserInfo() {
+    requestFiles() {
+      this.dataLoading = true;
+      console.log(this.params);
       this.$axios
-        .get('/userInfo/')
-        .then((r) => {
-          console.log(r);
+        .get('/fileList/', {
+          params: this.params,
         })
-        .catch((e) => {
-          console.log(e);
-        });
-    },
-    requestFiles(param) {
-      if (param !== undefined) { this.params = param; }
-      this.$axios
-        .get('/fileList/', { params: this.params })
         .then((r) => {
-          this.getFiles = r.data;
+          this.$store.dispatch('commitTotalFileSize', r.data.totalSize);
           this.dataLoading = false;
-          for (let i = 0; i < this.getFiles.length; i += 1) {
-            if (!this.getFiles[i].isFile) {
-              this.getFiles.splice(i, 1);
+
+          r.data.fileList.forEach((element) => {
+            if (element.isFile) {
+              this.getFiles.push(element);
             }
-          }
+          });
         })
         .catch((e) => {
           console.log(e);
