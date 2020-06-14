@@ -459,3 +459,25 @@ class fileRecovery(APIView):
             return Response({ 'error': 'User Not Found' }, status=status.HTTP_404_NOT_FOUND)
         except cognito.exceptions.UserNotConfirmedException:
             return Response({ 'error': 'User Not Confirmed' }, status=status.HTTP_406_NOT_ACCEPTABLE)
+
+class TrashList(APIView):
+     def get(self, request, format=None):
+        session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
+        cognito = session.client("cognito-idp")
+        try:
+            if not request.headers['AccessToken']:
+                raise cognito.exceptions.NotAuthorizedException
+            user = cognito.get_user(AccessToken=request.headers['AccessToken'])
+                   
+            queryset = File.objects.filter(author=user['Username'] , deletedDate__isnull=False)
+            serializer = FileSerializer(queryset, many=True)
+            res = { 
+                'fileList': serializer.data
+            }
+            return Response(res, status=status.HTTP_200_OK)
+        except cognito.exceptions.NotAuthorizedException:
+            return Response({ 'error': 'Not Authorized' }, status=status.HTTP_401_UNAUTHORIZED)
+        except cognito.exceptions.UserNotConfirmedException:
+            return Response({ 'error': 'User Not Confirmed' }, status=status.HTTP_406_NOT_ACCEPTABLE)
+        except cognito.exceptions.UserNotFoundException:
+            return Response({ 'error': 'User Not Found' }, status=status.HTTP_404_NOT_FOUND)
