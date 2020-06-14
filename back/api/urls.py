@@ -19,4 +19,5 @@ urlpatterns = [
     path('fileRecovery/',views.fileRecovery.as_view()),
     path('fileRename/', views.fileRename.as_view()),
     path('fileMove/', views.fileMove.as_view()),
+    path('fileRecent/', views.fileRecent.as_view()),
 ]
