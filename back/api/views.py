@@ -197,7 +197,6 @@ class UserDelete(APIView):
             }, status=error.response['ResponseMetadata']['HTTPStatusCode'])
 
 
-
 class FileList(APIView):
     def totalFileSize(self, author):
         queryset = File.objects.filter(author=author).aggregate(totalSize=Sum('fileSize'))
@@ -367,31 +366,6 @@ class FileDownload(APIView):
                 'date' : error.response['ResponseMetadata']['HTTPHeaders']['date']
             }, status=error.response['ResponseMetadata']['HTTPStatusCode'])
         
-        
-class FileErase(APIView):
-    def post(self, request, format=None):
-        session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
-        cognito = session.client("cognito-idp")
-        try:
-            if not 'AccessToken' in request.headers.keys():
-                raise cognito.exceptions.NotAuthorizedException(auth_error_response(), "FileErase")
-            cognito.get_user(AccessToken=request.headers['AccessToken'])
-            checkdate = datetime.now() + timedelta(days = -30)
-            queryset = File.objects.filter(deletedDate__lt = checkdate)
-            
-            session = boto3.session.Session(aws_access_key_id = S3_ACCESS_KEY_ID, aws_secret_access_key = S3_SECRET_ACCESS_KEY, region_name = AWS_REGION)
-            s3 = session.client('s3')
-            for delfile in queryset:
-                s3.delete_object(Bucket = S3_STORAGE_BUCKET_NAME, Key=str(delfile.fid))
-
-            queryset.delete()
-            return Response(status = status.HTTP_200_OK)
-        except ClientError as error:
-            return Response({ 
-                'error': error.response['Error']['Code'],
-                'date' : error.response['ResponseMetadata']['HTTPHeaders']['date']
-            }, status=error.response['ResponseMetadata']['HTTPStatusCode'])
-        
 
 class FileStarred(APIView) :
     def get(self, request, format=None):
@@ -451,49 +425,6 @@ class FileStarred(APIView) :
             }, status=error.response['ResponseMetadata']['HTTPStatusCode'])
 
 
-class FileTrash(APIView):
-    def post(self,request,format=None):
-        session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
-        cognito = session.client("cognito-idp")
-        try:
-            if not 'AccessToken' in request.headers.keys():
-                raise cognito.exceptions.NotAuthorizedException(auth_error_response(), "fileTrash")
-            user = cognito.get_user(AccessToken=request.headers['AccessToken'])
-            File.objects.filter(fid= ObjectId(request.data['fid'])).update(deletedDate=datetime.now(), starred=False)
-            return Response(status=status.HTTP_200_OK)
-        except KeyError as error:
-            return Response({ 
-                'error': 'No parameter:' + str(error),
-                'date' : datetime.now()
-            }, status=status.HTTP_400_BAD_REQUEST)
-        except ClientError as error:
-            return Response({ 
-                'error': error.response['Error']['Code'],
-                'date' : error.response['ResponseMetadata']['HTTPHeaders']['date']
-            }, status=error.response['ResponseMetadata']['HTTPStatusCode'])
-
-
-class FileRecovery(APIView):
-    def post(self, request, format=None):
-        session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
-        cognito = session.client("cognito-idp")
-        try:
-            if not 'AccessToken' in request.headers.keys():
-                raise cognito.exceptions.NotAuthorizedException(auth_error_response(), "fileRecovery")
-            File.objects.filter(fid= ObjectId(request.data['fid'])).update(deletedDate=None)
-            return Response(status=status.HTTP_200_OK)
-        except KeyError as error:
-            return Response({ 
-                'error': 'No parameter:' + str(error),
-                'date' : datetime.now()
-            }, status=status.HTTP_400_BAD_REQUEST)
-        except ClientError as error:
-            return Response({ 
-                'error': error.response['Error']['Code'],
-                'date' : error.response['ResponseMetadata']['HTTPHeaders']['date']
-            }, status=error.response['ResponseMetadata']['HTTPStatusCode'])
-
-
 class FileRename(APIView):
     def checkDuplicate(self, name, path):
         idx = 1
@@ -512,15 +443,14 @@ class FileRename(APIView):
     def put(self, request, format=None): 
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
-        print(request.data['file_id'],request.data['name'])
         try:
             if not 'AccessToken' in request.headers.keys():
                 raise cognito.exceptions.NotAuthorizedException(auth_error_response(), "fileRename")
             user = cognito.get_user(AccessToken=request.headers['AccessToken'])
-            File.objects.filter(fid=ObjectId(request.data['file_id'])).update(name=self.checkDuplicate(request.data['name'], request.data['path']))
+            File.objects.filter(fid= ObjectId(request.data['fid'])).update(name=self.checkDuplicate(request.data['name'], request.data['path']))
             if request.data['name']== "" or request.data['name'].strip() =="":
                 return Response({ 'error': 'File name must exist' },status = status.HTTP_400_BAD_REQUEST)
-            else:
+            else :
                 return Response(status=status.HTTP_200_OK)
         except KeyError as error:
             return Response({ 
@@ -532,17 +462,85 @@ class FileRename(APIView):
                 'error': error.response['Error']['Code'],
                 'date' : error.response['ResponseMetadata']['HTTPHeaders']['date']
             }, status=error.response['ResponseMetadata']['HTTPStatusCode'])
-        
+
 
 class FileMove(APIView):
     def put(self, request, format=None):
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
-        try:
+        try: 
             if not 'AccessToken' in request.headers.keys():
                 raise cognito.exceptions.NotAuthorizedException(auth_error_response(), "fileMove")
             user = cognito.get_user(AccessToken=request.headers['AccessToken'])
             File.objects.filter(fid=ObjectId(request.data['file_id'])).update(path=request.data['path'])
+            return Response(status=status.HTTP_200_OK)
+        except KeyError as error:
+            return Response({ 
+                'error': 'No parameter:' + str(error),
+                'date' : datetime.now()
+            }, status=status.HTTP_400_BAD_REQUEST)
+        except ClientError as error:
+            return Response({ 
+                'error': error.response['Error']['Code'],
+                'date' : error.response['ResponseMetadata']['HTTPHeaders']['date']
+            }, status=error.response['ResponseMetadata']['HTTPStatusCode'])
+
+
+class FileRecent(APIView):
+    def get(self, request, format=None):
+        session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
+        cognito = session.client("cognito-idp")
+        try:
+            if not 'AccessToken' in request.headers.keys():
+                raise cognito.exceptions.NotAuthorizedException(auth_error_response(), "fileRecent")
+            user = cognito.get_user(AccessToken=request.headers['AccessToken'])
+            queryset = File.objects.filter(author=user['Username']).order_by('-id')
+            serializer = FileSerializer(queryset, many=True)
+            res = {
+                'fileList': serializer.data
+            }
+            return Response(res, status=status.HTTP_200_OK)
+        except ClientError as error:
+            return Response({ 
+                'error': error.response['Error']['Code'],
+                'date' : error.response['ResponseMetadata']['HTTPHeaders']['date']
+            }, status=error.response['ResponseMetadata']['HTTPStatusCode'])
+
+        
+class FileErase(APIView):
+    def post(self, request, format=None):
+        session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
+        cognito = session.client("cognito-idp")
+        try:
+            if not 'AccessToken' in request.headers.keys():
+                raise cognito.exceptions.NotAuthorizedException(auth_error_response(), "FileErase")
+            cognito.get_user(AccessToken=request.headers['AccessToken'])
+            checkdate = datetime.now() + timedelta(days = -30)
+            queryset = File.objects.filter(deletedDate__lt = checkdate)
+            
+            session = boto3.session.Session(aws_access_key_id = S3_ACCESS_KEY_ID, aws_secret_access_key = S3_SECRET_ACCESS_KEY, region_name = AWS_REGION)
+            s3 = session.client('s3')
+            for delfile in queryset:
+                s3.delete_object(Bucket = S3_STORAGE_BUCKET_NAME, Key=str(delfile.fid))
+
+            queryset.delete()
+            return Response(status = status.HTTP_200_OK)
+        except ClientError as error:
+            return Response({ 
+                'error': error.response['Error']['Code'],
+                'date' : error.response['ResponseMetadata']['HTTPHeaders']['date']
+            }, status=error.response['ResponseMetadata']['HTTPStatusCode'])
+
+
+class FileTrash(APIView):
+    def post(self,request,format=None):
+        session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
+        cognito = session.client("cognito-idp")
+        try:
+            if not 'AccessToken' in request.headers.keys():
+                raise cognito.exceptions.NotAuthorizedException(auth_error_response(), "fileTrash")
+            user = cognito.get_user(AccessToken=request.headers['AccessToken'])
+            File.objects.filter(fid= ObjectId(request.data['fid'])).update(deletedDate=datetime.now(), starred=False)
             return Response(status=status.HTTP_200_OK)
         except KeyError as error:
             return Response({ 
@@ -578,22 +576,23 @@ class FileTrashList(APIView):
             }, status=error.response['ResponseMetadata']['HTTPStatusCode'])
 
 
-class FileRecent(APIView):
-    def get(self, request, format=None):
+class FileRecovery(APIView):
+    def post(self, request, format=None):
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
         try:
             if not 'AccessToken' in request.headers.keys():
-                raise cognito.exceptions.NotAuthorizedException(auth_error_response(), "fileRecent")
-            user = cognito.get_user(AccessToken=request.headers['AccessToken'])
-            queryset = File.objects.filter(author=user['Username']).order_by('-id')
-            serializer = FileSerializer(queryset, many=True)
-            res = {
-                'fileList': serializer.data
-            }
-            return Response(res, status=status.HTTP_200_OK)
+                raise cognito.exceptions.NotAuthorizedException(auth_error_response(), "fileRecovery")
+            File.objects.filter(fid= ObjectId(request.data['fid'])).update(deletedDate=None)
+            return Response(status=status.HTTP_200_OK)
+        except KeyError as error:
+            return Response({ 
+                'error': 'No parameter:' + str(error),
+                'date' : datetime.now()
+            }, status=status.HTTP_400_BAD_REQUEST)
         except ClientError as error:
             return Response({ 
                 'error': error.response['Error']['Code'],
                 'date' : error.response['ResponseMetadata']['HTTPHeaders']['date']
             }, status=error.response['ResponseMetadata']['HTTPStatusCode'])
+        
