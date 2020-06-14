@@ -35,7 +35,7 @@
     <!-- Upload Progress -->
     <v-overlay v-model="uploadProgress">
       <v-progress-circular :size="120" width="10" color="primary" indeterminate></v-progress-circular>
-      <div style="color: #ffffff; font-size: 18px; margin-top: 10px">Uploading File...</div>
+      <div style="color: #ffffff; font-size: 18px; margin-top: 10px">Now Loading...</div>
     </v-overlay>
     <!--  -->
 
@@ -217,12 +217,12 @@
           </v-row>
           <v-row class="mx-0 mt-4" justify="end" v-if="currentPage.title !== 'Recycle bin'">
             <v-btn class="mr-3" color="secondary">
-              <a @click.prevent="downloadFile(fileSpecific.fid)" style="color: #ffffff">Download</a>
+              <a @click="downloadFile(fileSpecific.fid)" style="color: #ffffff">Download</a>
             </v-btn>
           </v-row>
           <v-row class="mx-0 mt-4" justify="end" v-else>
             <v-btn class="mr-4" color="secondary">
-              <a @click.prevent="recoverFile(fileSpecific.fid)" style="color: #ffffff">Recover</a>
+              <a @click="recoverFile(fileSpecific.fid)" style="color: #ffffff">Recover</a>
             </v-btn>
           </v-row>
           <div style="height: 15px"></div>
@@ -310,6 +310,7 @@
 import moment from 'moment';
 import { mapGetters } from 'vuex';
 import { ValidationProvider, ValidationObserver } from 'vee-validate';
+import axios from 'axios';
 import Notify from './Notify.vue';
 
 export default {
@@ -465,11 +466,13 @@ export default {
         formData.append('isFile', true);
         formData.append('fileSize', files[i].size);
       }
+      console.log(files);
       this.$axios
         .post('/fileUpload/', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         })
-        .then(() => {
+        .then((r) => {
+          console.log(r);
           this.uploadProgress = false;
           this.refreshData();
         })
@@ -518,25 +521,46 @@ export default {
     },
     // 파일 다운로드
     downloadFile(fileId) {
+      let fileName = '';
       this.uploadProgress = true;
+      this.fileSpecificDialog = false;
       this.$axios
         .get('/fileDownload/', {
           params: {
             fid: fileId,
           },
         })
+        // .then((r) => {
+        //   console.log(r.data.downloadUrl);
+        //   fileName = r.data.fileName;
+        //   const url = window.URL.createObjectURL(new Blob([r.data.downloadUrl]));
+        //   const link = document.createElement('a');
+        //   link.href = url;
+        //   link.setAttribute('download', fileName); // or any other extension
+        //   document.body.appendChild(link);
+        //   link.click();
+        //   document.body.removeChild(link);
+        //   this.uploadProgress = false;
+        // })
         .then((r) => {
+          console.log(r.data.downloadUrl);
+          fileName = r.data.fileName;
+          return axios.get(r.data.downloadUrl, { responseType: 'blob' });
+        })
+        .then((res) => {
+          console.log(res);
+          const blob = new Blob([res.data]);
           const link = document.createElement('a');
-          link.setAttribute('href', `data:text/plain;charset=utf-8,${encodeURIComponent(r.data.downloadUrl)}`);
-          link.setAttribute('download', r.data.fileName);
-          link.style.display = 'none';
-          document.body.appendChild(link);
+          link.href = URL.createObjectURL(blob);
+          link.setAttribute('download', fileName); // or any other extension
+          // document.body.appendChild(link);
           link.click();
-          document.body.removeChild(link);
+          URL.revokeObjectURL(link.href);
+          // document.body.removeChild(link);
           this.uploadProgress = false;
         })
         .catch((e) => {
-          console.log(e.response);
+          console.log(e);
           this.resultDialog = true;
           this.rtMsg = e.response.data.error;
         });
