@@ -3,7 +3,12 @@ module.exports = {
   transpileDependencies: ['vuetify'],
 
   // options...
-  devServer: {
-    proxy: 'https://localhoust:8000/',
-  },
+  // devServer: {
+  //   '^/api/': {
+  //     target: 'http://127.0.0.1:8000/api/',
+  //   },
+  // },
+  // outputDir: './dist/',
+  // // assetsDir must match Django's STATIC_URL
+  // assetsDir: 'static',
 };
