@@ -63,21 +63,13 @@ export default {
       this.dataLoading = true;
       console.log(this.params);
       this.$axios
-        .get('/fileList/', {
-          params: this.params,
-        })
+        .get('/fileRecent/')
         .then((r) => {
-          this.$store.dispatch('commitTotalFileSize', r.data.totalSize);
           this.dataLoading = false;
-
-          r.data.fileList.forEach((element) => {
-            if (element.isFile) {
-              this.getFiles.push(element);
-            }
-          });
+          this.getFiles = r.data.fileList;
         })
         .catch((e) => {
-          console.log(e);
+          console.log(e.response);
         });
     },
   },

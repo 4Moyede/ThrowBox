@@ -261,6 +261,7 @@ export default {
           this.$router.replace('/');
         })
         .catch((e) => {
+          console.log(e);
           console.log(e.response);
           localStorage.removeItem('accessToken');
 

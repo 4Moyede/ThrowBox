@@ -530,18 +530,6 @@ export default {
             fid: fileId,
           },
         })
-        // .then((r) => {
-        //   console.log(r.data.downloadUrl);
-        //   fileName = r.data.fileName;
-        //   const url = window.URL.createObjectURL(new Blob([r.data.downloadUrl]));
-        //   const link = document.createElement('a');
-        //   link.href = url;
-        //   link.setAttribute('download', fileName); // or any other extension
-        //   document.body.appendChild(link);
-        //   link.click();
-        //   document.body.removeChild(link);
-        //   this.uploadProgress = false;
-        // })
         .then((r) => {
           console.log(r.data.downloadUrl);
           fileName = r.data.fileName;
@@ -581,10 +569,13 @@ export default {
     },
     // 파일 복구
     recoverFile(fid) {
+      this.fileSpecificDialog = false;
+      this.uploadProgress = true;
       this.$axios
-        .get('/fileRecovery/', { fid })
+        .post('/fileRecovery/', { fid })
         .then((r) => {
           this.$emit('loadFiles');
+          this.uploadProgress = false;
           console.log(r);
         })
         .catch((e) => {

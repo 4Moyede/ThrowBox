@@ -62,18 +62,12 @@ export default {
       this.dataLoading = true;
       console.log(this.params);
       this.$axios
-        .get('/fileList/', {
+        .get('/fileTrashList/', {
           params: this.params,
         })
         .then((r) => {
-          this.$store.dispatch('commitTotalFileSize', r.data.totalSize);
           this.dataLoading = false;
-
-          r.data.fileList.forEach((element) => {
-            if (element.deletedDate !== null) {
-              this.getFiles.push(element);
-            }
-          });
+          this.getFiles = r.data.fileList;
         })
         .catch((e) => {
           console.log(e);
