@@ -494,7 +494,7 @@ class FileRecent(APIView):
             if not 'AccessToken' in request.headers.keys():
                 raise cognito.exceptions.NotAuthorizedException(auth_error_response(), "fileRecent")
             user = cognito.get_user(AccessToken=request.headers['AccessToken'])
-            queryset = File.objects.filter(author=user['Username']).order_by('-id')
+            queryset = File.objects.filter(author=user['Username'], isFile=True).order_by('-fid')
             serializer = FileSerializer(queryset, many=True)
             res = {
                 'fileList': serializer.data
