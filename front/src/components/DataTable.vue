@@ -146,7 +146,7 @@
                     </template>
                     <v-list>
                       <v-list-item>
-                        <v-list-item-title @click="renameForm.file_id = item.fid; renameDialog = true">Rename</v-list-item-title>
+                        <v-list-item-title @click="renameForm.fid = item.fid; renameDialog = true">Rename</v-list-item-title>
                       </v-list-item>
                       <v-list-item>
                         <v-list-item-title @click="beforeClickChangePath(item)">Change Path</v-list-item-title>
@@ -366,12 +366,12 @@ export default {
       renameDialog: false,
       renameForm: {
         name: null,
-        file_id: null,
+        fid: null,
         path: null,
       },
       moveDialog: false,
       moveForm: {
-        file_id: null,
+        fid: null,
         path: null,
       },
       tableOption: {
@@ -596,7 +596,7 @@ export default {
           this.uploadProgress = false;
           this.renameForm.path = null;
           this.renameForm.name = null;
-          this.renameForm.file_id = null;
+          this.renameForm.fid = null;
         })
         .catch((e) => {
           console.log(e.response);
@@ -608,7 +608,7 @@ export default {
       this.pathNameArray = [];
       this.pathStore = [];
       this.pathStore = [];
-      this.moveForm.file_id = item.fid;
+      this.moveForm.fid = item.fid;
       this.moveDialog = true;
       this.pathArray.forEach((element) => {
         this.pathNameArray.push(element.name);
@@ -638,7 +638,7 @@ export default {
           this.uploadProgress = false;
 
           this.moveForm.path = null;
-          this.moveForm.file_id = null;
+          this.moveForm.fid = null;
           console.log(r);
         })
         .catch((e) => {
