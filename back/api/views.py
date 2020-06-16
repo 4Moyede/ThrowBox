@@ -372,30 +372,18 @@ class FileStarred(APIView) :
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
         try:
-            if not 'AccessToken' in request.headers.keys():
-                raise cognito.exceptions.NotAuthorizedException(auth_error_response(), "FileStarred")
+            if not request.headers['AccessToken']:
+                raise cognito.exceptions.NotAuthorizedException
             user = cognito.get_user(AccessToken=request.headers['AccessToken'])
-            starred = request.GET.get('starred', None)
-            if not starred:
-                    user = cognito.admin_get_user(
-                        UserPoolId=COGNITO_USER_POOL_ID,
-                        Username=user['Username']
-                    )
-                    starred = next((user_attribute for user_attribute in user['UserAttributes'] if user_attribute['Name'] == 'custom:baseDirID'), False)['Value']
-            queryset = File.objects.filter(starred=starred)
+            queryset = File.objects.filter(author=user['Username'] , starred=True)
             serializer = FileSerializer(queryset, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
-        except KeyError as error:
-            return Response({ 
-                'error': 'No parameter:' + str(error),
-                'date' : datetime.now()
-            }, status=status.HTTP_400_BAD_REQUEST)
         except ClientError as error:
             return Response({ 
                 'error': error.response['Error']['Code'],
                 'date' : error.response['ResponseMetadata']['HTTPHeaders']['date']
             }, status=error.response['ResponseMetadata']['HTTPStatusCode'])
-   
+ 
     def post(self, request, format = None) :
         session = boto3.session.Session(aws_access_key_id=COGNITO_ACCESS_KEY_ID, aws_secret_access_key=COGNITO_SECRET_ACCESS_KEY, region_name=AWS_REGION)
         cognito = session.client("cognito-idp")
@@ -404,12 +392,7 @@ class FileStarred(APIView) :
                 raise cognito.exceptions.NotAuthorizedException(auth_error_response(), "FileStarred")
             user = cognito.get_user(AccessToken=request.headers['AccessToken'])
             request_fid = request.data['fid']
-            if not request_fid:
-                user = cognito.admin_get_user(
-                    UserPoolId=COGNITO_USER_POOL_ID,
-                    Username=user['Username']
-                )
-                request_fid = next((user_attribute for user_attribute in user['UserAttributes'] if user_attribute['Name'] == 'custom:baseDirID'), False)['Value']
+            
             queryset = File.objects.filter(fid = request_fid)
             queryset.update(starred = request.data['starred'])
             return Response(status = status.HTTP_200_OK)
