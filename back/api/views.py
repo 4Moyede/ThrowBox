@@ -455,7 +455,14 @@ class FileMove(APIView):
             if not 'AccessToken' in request.headers.keys():
                 raise cognito.exceptions.NotAuthorizedException(auth_error_response(), "fileMove")
             user = cognito.get_user(AccessToken=request.headers['AccessToken'])
-            File.objects.filter(fid=ObjectId(request.data['file_id'])).update(path=request.data['path'])
+            path = request.data['path']
+            if not path:
+                user = cognito.admin_get_user(
+                    UserPoolId=COGNITO_USER_POOL_ID,
+                    Username=user['Username']
+                )
+                path = next((user_attribute for user_attribute in user['UserAttributes'] if user_attribute['Name'] == 'custom:baseDirID'), False)['Value']
+            File.objects.filter(fid=ObjectId(request.data['fid'])).update(path=path)
             return Response(status=status.HTTP_200_OK)
         except KeyError as error:
             return Response({ 
