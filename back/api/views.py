@@ -585,4 +585,3 @@ class FileRecovery(APIView):
                 'error': error.response['Error']['Code'],
                 'date' : error.response['ResponseMetadata']['HTTPHeaders']['date']
             }, status=error.response['ResponseMetadata']['HTTPStatusCode'])
-        
